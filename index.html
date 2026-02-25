@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Acadêmica - IFPR</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Overlay para fechar o menu ao clicar fora -->
+    <div id="menuOverlay" class="menu-overlay"></div>
+
+    <!-- Menu Lateral (Sidebar) -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu Principal</h3>
+            <button id="closeSidebar" class="close-menu-btn">&times;</button>
+        </div>
+        <ul class="menu-items">
+            <li class="menu-item">
+                <div class="menu-info">
+                    <strong>Modo Noturno</strong>
+                    <span>Ajustar brilho</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="themeToggle">
+                    <span class="slider round"></span>
+                </label>
+            </li>
+            <hr class="separator">
+            <li id="loginArea">
+                <button id="btnLogin" class="btn-sidebar">Acesso Líder de Turma</button>
+            </li>
+            <li id="adminStatus" style="display:none;">
+                <div class="user-card">
+                    <p>Líder Logado ✅</p>
+                    <button id="btnLogout" class="btn-sidebar btn-logout">Sair do Modo Edição</button>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Cabeçalho -->
+    <header class="header-ifpr">
+        <div class="container header-content">
+            <button id="menuIcon" class="hamburger-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="brand">
+                <h1>Agenda Digital</h1>
+                <p>IFPR Assis Chateaubriand</p>
+            </div>
+            <div id="statusIndicator" class="status-indicator">📖</div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Navegação -->
+        <section class="calendar-nav">
+            <button id="prevMonth" class="nav-btn">&lt;</button>
+            <h2 id="monthDisplay">Outubro 2023</h2>
+            <button id="nextMonth" class="nav-btn">&gt;</button>
+        </section>
+
+        <!-- Calendário -->
+        <div class="calendar-wrapper">
+            <div class="weekdays">
+                <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+            </div>
+            <div id="calendarGrid" class="calendar-grid"></div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="legend">
+            <div class="legend-item"><span class="dot prova"></span> Prova</div>
+            <div class="legend-item"><span class="dot trabalho"></span> Trab.</div>
+            <div class="legend-item"><span class="dot tarefa"></span> Tarefa</div>
+            <div class="legend-item"><span class="dot evento"></span> Inst.</div>
+            <div class="legend-item"><span class="dot off"></span> Sem Aula</div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalDateTitle">Data</h3>
+                    <p id="holidayName" class="holiday-text"></p>
+                </div>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <div id="eventsList" class="events-scroll"></div>
+
+            <div id="adminFormArea" class="admin-form" style="display:none;">
+                <hr>
+                <form id="eventForm">
+                    <input type="hidden" id="eventDate">
+                    <input type="hidden" id="editingIndex" value="-1">
+                    <h4>Adicionar Atividade</h4>
+                    <input type="text" id="title" required placeholder="Título">
+                    <select id="type">
+                        <option value="prova">Prova (Vermelho)</option>
+                        <option value="trabalho">Trabalho (Azul)</option>
+                        <option value="tarefa">Tarefa/Visto (Verde)</option>
+                        <option value="evento">Institucional (Amarelo)</option>
+                    </select>
+                    <input type="time" id="time">
+                    <textarea id="desc" placeholder="Observações"></textarea>
+                    <button type="submit" class="btn-save">Salvar na Agenda</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

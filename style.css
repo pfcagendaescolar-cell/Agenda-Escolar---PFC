@@ -1,0 +1,95 @@
+:root {
+    --primary: #32a041;
+    --bg: #f5f6f7;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --border: #e0e0e0;
+    --day-off: #eeeeee; /* Cor para dias sem aula */
+    --holiday-bg: #e2e2e2; /* Feriado um pouco mais escuro */
+    
+    /* Cores de Atividades */
+    --prova: #d63031;
+    --trabalho: #0984e3;
+    --tarefa: #00b894;
+    --evento: #f1c40f;
+}
+
+[data-theme="dark"] {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #ffffff;
+    --border: #333333;
+    --day-off: #2a2a2a;
+    --holiday-bg: #353535;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+.container { width: 100%; max-width: 450px; margin: 0 auto; padding: 0 15px; }
+
+/* Header & Hamburger */
+.header-ifpr { background: var(--primary); color: white; padding: 12px 0; position: sticky; top: 0; z-index: 100; }
+.header-content { display: flex; align-items: center; justify-content: space-between; }
+
+.hamburger-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 5px; }
+.hamburger-btn span { width: 20px; height: 2px; background: white; border-radius: 2px; }
+
+/* Sidebar & Overlay */
+.menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; }
+.menu-overlay.active { display: block; }
+
+.sidebar { position: fixed; left: -260px; top: 0; width: 260px; height: 100%; background: var(--card); z-index: 999; transition: 0.3s ease; padding: 20px; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+.sidebar.active { left: 0; }
+
+/* Calendário Estilo Agenda */
+.calendar-nav { display: flex; justify-content: space-between; align-items: center; margin: 20px 0; }
+.nav-btn { background: var(--card); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; color: var(--text); }
+
+.calendar-wrapper { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid var(--border); }
+.weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; opacity: 0.6; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+
+/* Estilização dos Dias */
+.day {
+    aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+    background: var(--card); border: 1px solid var(--border);
+}
+
+/* Dias sem aula (Final de semana e férias) */
+.day-off { background-color: var(--day-off); color: #888; border-style: dashed; }
+
+/* Feriados (Destaque Escuro) */
+.day-holiday { background-color: var(--holiday-bg); color: var(--text); font-weight: bold; border: 1px solid #999; }
+
+/* Atividades (Prioridade Visual) */
+.has-prova { background: var(--prova) !important; color: white !important; border: none; }
+.has-trabalho { background: var(--trabalho) !important; color: white !important; border: none; }
+.has-tarefa { background: var(--tarefa) !important; color: white !important; border: none; }
+.has-evento { background: var(--evento) !important; color: #1a1a1a !important; border: none; }
+
+/* Modal & Lista */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1001; align-items: center; justify-content: center; padding: 20px; }
+.modal-content { background: var(--card); width: 100%; max-width: 380px; border-radius: 15px; padding: 20px; }
+.holiday-text { color: var(--prova); font-size: 0.8rem; font-weight: bold; margin-top: 4px; }
+.event-item { background: var(--bg); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid var(--primary); }
+
+/* Legenda */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; padding-bottom: 40px; }
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: bold; }
+.dot { width: 10px; height: 10px; border-radius: 2px; }
+.dot.off { background: var(--day-off); border: 1px dotted #888; }
+.dot.prova { background: var(--prova); }
+.dot.trabalho { background: var(--trabalho); }
+.dot.tarefa { background: var(--tarefa); }
+.dot.evento { background: var(--evento); }
+
+/* Switch */
+.switch { position: relative; width: 34px; height: 20px; }
+.switch input { opacity: 0; }
+.slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; border-radius: 20px; transition: .4s; }
+.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .4s; }
+input:checked + .slider { background: var(--primary); }
+input:checked + .slider:before { transform: translateX(14px); }

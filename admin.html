@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Agenda Acadêmica IFPR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos específicos do Admin (além do style.css) */
+        .admin-header {
+            background-color: var(--text-main);
+            color: var(--bg-body);
+            padding: 15px 0;
+            text-align: center;
+        }
+
+        .admin-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .admin-container {
+            margin-top: 20px;
+        }
+
+        .turma-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .turma-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .turma-info p {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-edit {
+            background-color: #f59e0b;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            flex: 1;
+            font-weight: bold;
+        }
+
+        .btn-delete {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            flex: 1;
+            font-weight: bold;
+        }
+
+        .btn-new-turma {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .form-section-title {
+            margin: 15px 0 10px 0;
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="admin-header">
+        <div class="container">
+            <h1>Painel do Professor (Admin)</h1>
+            <p style="font-size: 0.85rem; opacity: 0.8;">Gerenciamento de Turmas e Líderes</p>
+        </div>
+    </header>
+
+    <main class="container admin-container">
+
+        <!-- Botão Criar Nova Turma -->
+        <button id="btnNovaTurma" class="btn-new-turma">+ Criar Nova Turma</button>
+
+        <!-- Lista de Turmas -->
+        <div id="turmasList">
+            <!-- Renderizado via JS -->
+        </div>
+
+    </main>
+
+    <!-- Modal Form Turma -->
+    <div id="turmaModal" class="modal">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <h3 id="modalTurmaTitle">Nova Turma</h3>
+                <button class="close-modal-btn" id="closeTurmaModal">&times;</button>
+            </div>
+
+            <form id="turmaForm">
+                <input type="hidden" id="turmaId">
+
+                <h4 class="form-section-title">Dados da Turma</h4>
+                <div class="input-group">
+                    <label>Nome da Turma (Ex: Info 24):</label>
+                    <input type="text" id="tNome" required>
+                </div>
+                <div class="input-group">
+                    <label>Curso:</label>
+                    <input type="text" id="tCurso" required>
+                </div>
+                <div class="input-group">
+                    <label>Ano:</label>
+                    <input type="number" id="tAno" required min="2020" max="2100">
+                </div>
+
+                <h4 class="form-section-title">Líder</h4>
+                <div class="input-group">
+                    <label>Nome do Líder:</label>
+                    <input type="text" id="liderNome" required>
+                </div>
+                <div class="input-group">
+                    <label>Email do Líder:</label>
+                    <input type="email" id="liderEmail" required>
+                </div>
+                <div class="input-group">
+                    <label>Senha do Líder:</label>
+                    <input type="text" id="liderSenha" required>
+                </div>
+
+                <h4 class="form-section-title">Vice-Líder</h4>
+                <div class="input-group">
+                    <label>Nome do Vice-Líder:</label>
+                    <input type="text" id="viceNome" required>
+                </div>
+                <div class="input-group">
+                    <label>Email do Vice-Líder:</label>
+                    <input type="email" id="viceEmail" required>
+                </div>
+                <div class="input-group">
+                    <label>Senha do Vice-Líder:</label>
+                    <input type="text" id="viceSenha" required>
+                </div>
+
+                <button type="submit" class="btn-save" style="margin-top: 15px;">Salvar Turma</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="scriptadmin.js"></script>
+</body>
+
+</html>

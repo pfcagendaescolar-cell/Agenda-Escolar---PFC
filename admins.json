@@ -1,0 +1,20 @@
+[
+  {
+    "_id": "1772818303087",
+    "nome": "Luana Ferreira Borborema",
+    "email": "luana.fborborema@gmail.com",
+    "password": "oioi",
+    "cargo": "principal",
+    "status": "ativo",
+    "recoveryCode": "REC789",
+    "dataCriacao": "2026-03-06T17:31:43.090Z"
+  },
+  {
+    "_id": "1776453205825",
+    "nome": "luana ",
+    "email": "luana@gmail.com",
+    "password": "oioi",
+    "cargo": "secundario",
+    "status": "ativo"
+  }
+]

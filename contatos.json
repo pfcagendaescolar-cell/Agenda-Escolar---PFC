@@ -1,0 +1,18 @@
+[
+  {
+    "_id": "6",
+    "nome": "Projeto de Desenvolvimento",
+    "setor": "PFC - Agenda Acadêmica",
+    "descricao": "Suporte técnico e dúvidas sobre a plataforma Agenda Acadêmica Digital",
+    "email": "projeto.ifpr.assis@gmail.com",
+    "telefone": ""
+  },
+  {
+    "_id": "1773146392355",
+    "nome": "Secretaria do IFPR Campus Assis Chateaubriand  ",
+    "setor": "Secretaria ",
+    "descricao": "Aqui você envia atestados, declarações e etc.",
+    "email": "assis.secretaria@ifpr.edu.br",
+    "telefone": ""
+  }
+]

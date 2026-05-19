@@ -1,0 +1,50 @@
+[
+  {
+    "nome": "IIW24",
+    "curso": "Técnico em Informática Para Internet integrado ao ensino médio",
+    "ano": "2020",
+    "lider": {
+      "nome": "Emilly",
+      "email": "pfc.agendaescolar@gmail.com",
+      "senha": "oioi"
+    },
+    "vice": {
+      "nome": "Luana",
+      "email": "pfc.agendaescolarll@gmail.com",
+      "senha": "oioi"
+    },
+    "id": "1772901536076"
+  },
+  {
+    "nome": "AGO23",
+    "curso": "Técnico em Informática Para Internet integrado ao ensino médio",
+    "ano": "2025",
+    "lider": {
+      "nome": "Emilly",
+      "email": "emilly@gmail.com",
+      "senha": "oioi"
+    },
+    "vice": {
+      "nome": "Luana",
+      "email": "luana@gmail.com",
+      "senha": "oioi"
+    },
+    "id": "1778592752878"
+  },
+  {
+    "nome": "IIW27",
+    "curso": "Técnico em Informática Para Internet integrado ao ensino médio",
+    "ano": "2025",
+    "lider": {
+      "nome": "Emilly",
+      "email": "emilly@gmail.com",
+      "senha": "oioi"
+    },
+    "vice": {
+      "nome": "Luana",
+      "email": "luana@gmail.com",
+      "senha": "oioi"
+    },
+    "id": "1778592855367"
+  }
+]

@@ -1,0 +1,89 @@
+[
+  {
+    "_id": "1773147726958",
+    "titulo": "oi",
+    "tipo": "turma",
+    "categoria": "prova",
+    "data": "2026-03-18",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "1772901536076",
+    "criadoPor": "líder",
+    "usuarioId": "pfc.agendaescolar@gmail.com"
+  },
+  {
+    "_id": "1773147862773",
+    "titulo": "Festa junina do IF ",
+    "tipo": "geral",
+    "categoria": "evento",
+    "data": "2026-03-19",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "__geral__",
+    "criadoPor": "admin",
+    "usuarioId": "luana.fborborema@gmail.com"
+  },
+  {
+    "_id": "1776213651877",
+    "titulo": "prova de matemática ",
+    "categoria": "prova",
+    "tipo": "turma",
+    "data": "2026-04-15",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "1772153570236",
+    "criadoPor": "líder",
+    "usuarioId": "pfc.agendaescolar@gmail.com"
+  },
+  {
+    "_id": "1776213998271",
+    "titulo": "khuukj",
+    "categoria": "prova",
+    "tipo": "turma",
+    "data": "2026-04-08",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "1772153570236",
+    "criadoPor": "líder",
+    "usuarioId": "luana.fborborema@gmail.com"
+  },
+  {
+    "_id": "1776214010240",
+    "titulo": "kbkjhbk",
+    "categoria": "prova",
+    "tipo": "turma",
+    "data": "2026-04-09",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "1772216559223",
+    "criadoPor": "líder",
+    "usuarioId": "luana.fborborema@gmail.com"
+  },
+  {
+    "_id": "1776453080628",
+    "titulo": "Prova1",
+    "categoria": "prova",
+    "tipo": "turma",
+    "data": "2026-04-17",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "1772153570236",
+    "criadoPor": "admin",
+    "usuarioId": "luana.fborborema@gmail.com",
+    "criadoEm": "2026-04-17T19:11:20.629Z"
+  },
+  {
+    "_id": "1776874951619",
+    "titulo": "SKL",
+    "categoria": "prova",
+    "tipo": "turma",
+    "data": "2026-03-11",
+    "hora": "",
+    "descricao": "",
+    "turmaId": "1772901536076",
+    "criadoPor": "admin",
+    "usuarioId": "luana.fborborema@gmail.com",
+    "criadoEm": "2026-04-22T16:22:31.623Z",
+    "updatedAt": "2026-05-12T13:35:11.078Z"
+  }
+]

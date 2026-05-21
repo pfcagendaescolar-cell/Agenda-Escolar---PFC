@@ -193,56 +193,6 @@ body {
     /* Aumentado levemente para melhor espaçamento */
 }
 
-/* Estrutura da navbar */
-.navbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* ESSENCIAL */
-    width: 100%;
-}
-
-/* Botão hamburguer (esquerda) */
-.menu-toggle {
-    margin-right: auto;
-}
-
-/* Botão dark (direita) */
-.dark-mode-toggle {
-    margin-left: auto;
-    cursor: pointer;
-}
-
-/* MOBILE */
-@media (max-width: 768px) {
-
-    .navbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* Garante posições corretas */
-    .menu-toggle {
-        order: 1;
-    }
-
-    .dark-mode-toggle {
-        order: 3;
-    }
-
-    /* Caso tenha logo/título */
-    .navbar-title {
-        order: 2;
-        text-align: center;
-        flex: 1;
-    }
-
-    /* REMOVE do menu lateral */
-    .menu-lateral .dark-mode-toggle {
-        display: none;
-    }
-}
-
 .nav-link {
     color: #ffffff;
     text-decoration: none;
@@ -269,12 +219,11 @@ body {
 /* Botão de Alternar Tema no Header */
 .nav-theme-toggle {
     margin-left: auto;
-    /* Mantém na direita */
-    padding: 0 5px;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
+    order: 999; /* garante que ele seja o último */
 }
-
 .theme-switch {
     width: 40px;
     height: 40px;
@@ -377,8 +326,9 @@ body {
     align-items: center;
     flex-wrap: wrap;
     gap: 2px;
-    width: 100%;
+    flex: 1;
 }
+
 
 /* =======================================
    RESPONSIVIDADE DO CABEÇALHO
@@ -460,16 +410,14 @@ body {
     /* Posicionamento do Toggle e Hambúrguer no Mobile */
     .header-nav-inner {
         flex-direction: row;
+        position: relative;
         justify-content: flex-start;
         align-items: center;
         padding: 0.5rem 0.75rem;
         gap: 0.5rem;
     }
 
-    .nav-theme-toggle {
-        margin-left: auto;
-        flex-shrink: 0;
-    }
+    
     
     .nav-config-btn {
         flex-shrink: 0;

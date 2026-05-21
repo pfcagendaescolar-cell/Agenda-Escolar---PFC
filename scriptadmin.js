@@ -33,16 +33,11 @@ function obterHeadersAutenticacaoAdmin() {
         'Content-Type': 'application/json'
     };
 
-    const token = currentUser?.token || localStorage.getItem('ifpr_auth_token');
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
     if (currentUser && currentUser.email) {
         headers['X-Usuario-Email'] = currentUser.email;
         headers['X-Usuario-Role'] = currentUser.role || 'admin';
         
-        // ✅ Enviar X-Usuario-Turma para líderes
+        // ✅ CORREÇÃO: Enviar X-Usuario-Turma para líderes
         if (currentUser.role === 'turma_admin' && currentUser._id) {
             headers['X-Usuario-Turma'] = currentUser._id;
         }
@@ -63,12 +58,13 @@ function verificarAutenticacao() {
     const loginSection = document.getElementById('adminLoginSection');
     const dashboardSection = document.getElementById('adminDashboardSection');
     const userInfoHeader = document.getElementById('userInfoHeader');
-    const adminNavBar = document.getElementById('adminNavBar');
+    const menuIcon = document.getElementById('menuIcon');
 
     if (!currentUser) {
         // ✅ Sem usuario: mostrar login (não redirecionar!)
         if (loginSection) loginSection.style.display = 'block';
         if (dashboardSection) dashboardSection.style.display = 'none';
+        if (menuIcon) menuIcon.classList.remove('show-mobile');
         return;
     }
 
@@ -86,7 +82,8 @@ function verificarAutenticacao() {
     if (loginSection) loginSection.style.display = 'none';
     if (dashboardSection) dashboardSection.style.display = 'block';
     if (userInfoHeader) userInfoHeader.style.display = 'flex';
-    if (adminNavBar) adminNavBar.style.display = 'block';
+    if (menuIcon) menuIcon.classList.add('show-mobile');
+    if (menuIcon) menuIcon.setAttribute('aria-expanded', 'false');
 
     if (document.getElementById('adminUserName')) {
         document.getElementById('adminUserName').innerText = currentUser.nome;
@@ -199,10 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (res.ok) {
                     currentUser = data.user;
-                    currentUser.token = data.token;
                     // ✅ CORREÇÃO: Usar a mesma chave em todos os lugares
                     localStorage.setItem('ifpr_user_logged', JSON.stringify(currentUser));
-                    localStorage.setItem('ifpr_auth_token', data.token);
                     verificarAutenticacao();
                     // Ativa a aba salva
                     const btn = document.querySelector(`.admin-tab-btn[data-tab="${currentTab}"]`);
@@ -330,8 +325,16 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // Mobile menu toggle for admin navigation
-    const adminMenuButton = document.getElementById('adminMenuButton');
+    // Se logado, garante que a aba correta está ativa
+    if (currentUser) {
+        const target = document.querySelector(`.admin-tab-btn[data-tab="${currentTab}"]`);
+        if (target) target.click();
+    }
+});
+
+// Mobile menu toggle for admin navigation
+(function () {
+    const adminMenuButton = document.getElementById('menuIcon');
     const adminTabsNav = document.querySelector('.admin-tabs-nav');
 
     const toggleAdminMobileMenu = (open) => {
@@ -355,13 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => toggleAdminMobileMenu(false));
     });
-
-    // Se logado, garante que a aba correta está ativa
-    if (currentUser) {
-        const target = document.querySelector(`.admin-tab-btn[data-tab="${currentTab}"]`);
-        if (target) target.click();
-    }
-});
+})();
 
 // Código removido - redundant with earlier restoration logic
 
@@ -535,14 +532,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     turmaObj.id = id;
                     await fetch(`${API_BASE}/turmas/${id}`, {
                         method: 'PUT',
-                        headers: obterHeadersAutenticacaoAdmin(),
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(turmaObj)
                     });
                 } else {
                     // Create
                     await fetch(`${API_BASE}/turmas`, {
                         method: 'POST',
-                        headers: obterHeadersAutenticacaoAdmin(),
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(turmaObj)
                     });
                 }
@@ -560,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.excluirTurma = async (id) => {
     if (confirm("Tem certeza que deseja excluir esta turma?")) {
         try {
-            await fetch(`${API_BASE}/turmas/${id}`, { method: 'DELETE', headers: obterHeadersAutenticacaoAdmin() });
+            await fetch(`${API_BASE}/turmas/${id}`, { method: 'DELETE' });
             carregarTurmasAdmin();
         } catch (err) {
             console.error(err);
@@ -595,7 +592,7 @@ async function carregarEventosDaTurma() {
     container.innerHTML = '<p class="empty-msg">Carregando...</p>';
 
     try {
-        const res = await fetch(`${API_BASE}/eventos/turma/${turmaEditandoEventos.id}`);
+        const res = await fetch(`${API_BASE}/eventos?turmaId=${turmaEditandoEventos.id}`);
         const eventos = await res.json();
         renderizarListaEventos(container, eventos);
     } catch (err) {

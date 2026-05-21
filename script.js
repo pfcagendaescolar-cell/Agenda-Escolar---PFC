@@ -660,7 +660,6 @@ function configurarEventosInterface() {
                     liderLogado = true;
                     localStorage.setItem('ifpr_lider_logado', 'true');
                     localStorage.setItem('ifpr_user_logged', JSON.stringify(data.user));
-                    localStorage.setItem('ifpr_auth_token', data.token);
 
                     // Fechar o modal
                     if (loginModal) loginModal.style.display = 'none';

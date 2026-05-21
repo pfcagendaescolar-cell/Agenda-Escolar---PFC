@@ -237,10 +237,6 @@ main#mainContent {
             gap: 5px;
         }
 
-        .admin-menu-btn {
-            display: none;
-        }
-
         .admin-tab-btn i {
             font-size: 1.2rem;
         }
@@ -267,6 +263,30 @@ main#mainContent {
 
         .admin-tab-btn span {
             font-size: 1.2rem;
+        }
+
+        #menuIcon {
+            display: none !important;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        #menuIcon.show-mobile {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            margin-left: 0;
+        }
+
+        #menuIcon.show-mobile .nav-ham-line {
+            width: 22px;
+            height: 2px;
+            background: var(--text-main);
+            border-radius: 2px;
         }
 
         /* Estilos de Card de Evento/Contato */
@@ -435,21 +455,30 @@ main#mainContent {
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
+            #menuIcon.show-mobile {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 44px;
+                margin-left: 0;
+            }
+
             .admin-tabs-nav {
                 position: fixed;
                 top: 0;
                 left: 0;
-                z-index: 999;
+                z-index: 1100;
                 width: min(320px, 90%);
+                max-width: 320px;
                 height: 100vh;
                 display: flex;
                 flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-                padding: 24px 18px;
-                background: var(--bg-card);
-                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
-                border-right: 1px solid var(--border);
+                gap: 12px;
+                padding: 26px 18px;
+                background: #ffffff;
+                border-right: 1px solid rgba(15, 23, 42, 0.08);
+                box-shadow: 6px 0 32px rgba(15, 23, 42, 0.14);
                 transform: translateX(-110%);
                 transition: transform 0.25s ease;
                 overflow-y: auto;
@@ -459,41 +488,24 @@ main#mainContent {
                 transform: translateX(0);
             }
 
-            .admin-menu-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 10px;
-                padding: 12px 16px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
-                background: var(--bg-card);
-                color: var(--text-main);
+            .admin-tabs-nav::before {
+                content: "Menu";
+                font-size: 1rem;
                 font-weight: 700;
-                cursor: pointer;
-                transition: transform 0.2s ease, background-color 0.2s ease;
-                margin-bottom: 16px;
-            }
-
-            .admin-menu-btn:hover {
-                transform: translateY(-1px);
-                background: rgba(255,255,255,0.92);
-            }
-
-            .admin-menu-btn .nav-ham-line {
-                display: block;
-                width: 18px;
-                height: 2px;
-                background: currentColor;
-                border-radius: 1px;
+                color: var(--text-main);
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--border);
+                margin-bottom: 6px;
             }
 
             .admin-tab-btn {
                 width: 100%;
+                justify-content: flex-start;
                 padding: 14px 16px;
                 font-size: 0.95rem;
-                text-align: left;
-                border-radius: 12px;
+                border-radius: 14px;
                 background: transparent;
+                border: 1px solid transparent;
             }
 
             .admin-tab-btn.active {
@@ -502,9 +514,33 @@ main#mainContent {
             }
 
             .admin-tab-btn span {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
                 gap: 10px;
+            }
+
+            .header-brand-inner {
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .header-auth-info {
+                display: none;
+            }
+
+            #menuIcon {
+                order: 1;
+            }
+
+            .header-logo {
+                order: 2;
+            }
+
+            .header-titles {
+                order: 3;
+                width: 100%;
+                max-width: calc(100% - 90px);
             }
 
             .admin-tabs-nav + .admin-container {
@@ -655,26 +691,13 @@ main#mainContent {
                     <button class="btn-delete btn-logout-action"
                         style="padding: 5px 10px; font-size: 0.8rem; flex: none;">Sair</button>
                 </div>
-                <button id="menuIcon" class="nav-mobile-btn" style="margin-left: auto; display: none;">
+                <button id="menuIcon" class="nav-mobile-btn" aria-label="Abrir menu">
                     <span class="nav-ham-line"></span>
                     <span class="nav-ham-line"></span>
                     <span class="nav-ham-line"></span>
                 </button>
             </div>
         </div>
-        <!-- Faixa 3: Barra verde de navegação -->
-        <nav class="header-nav-bar" id="adminNavBar" style="display: none;">
-            <div class="header-nav-inner">
-                <button id="navMobileToggle" class="nav-mobile-btn" aria-label="Abrir menu">
-                    <span class="nav-ham-line"></span>
-                    <span class="nav-ham-line"></span>
-                    <span class="nav-ham-line"></span>
-                </button>
-                <div id="navLinks" class="nav-links-wrapper">
-                    <a href="index.html" class="nav-link">Site Principal</a>
-                </div>
-            </div>
-        </nav>
     </header>
 
     <main id="mainContent">
@@ -771,13 +794,6 @@ main#mainContent {
         <div id="adminDashboardSection" class="admin-container" style="display: none;">
 
             <!-- Navegação por Abas (Mobile First) -->
-            <button id="adminMenuButton" class="admin-menu-btn" aria-label="Abrir menu" aria-expanded="false">
-                <span class="nav-ham-line"></span>
-                <span class="nav-ham-line"></span>
-                <span class="nav-ham-line"></span>
-                Menu
-            </button>
-
             <nav class="admin-tabs-nav">
                 <button class="admin-tab-btn active" data-tab="turmas">
                     <span>📋</span> Turma
@@ -1096,12 +1112,6 @@ main#mainContent {
     </footer>
 
     <script src="scriptadmin.js"></script>
-    <script>
-        // Script de Menu Mobile extra para admin.html (redundância)
-        document.getElementById('navMobileToggle')?.addEventListener('click', function () {
-            document.getElementById('navLinks')?.classList.toggle('nav-open');
-        });
-    </script>
 </body>
 
 </html>

@@ -182,6 +182,11 @@ body {
     transition: background-color 0.3s;
 }
 
+/* Permite posicionar elementos no canto direito da faixa inteira */
+.header-nav-bar {
+    position: relative;
+}
+
 .header-nav-inner {
     max-width: 1200px;
     margin: 0 auto;
@@ -218,12 +223,18 @@ body {
 /* Botão de Configurações/Login no Cabeçalho */
 /* Botão de Alternar Tema no Header */
 .nav-theme-toggle {
-    margin-left: auto;
+    /* Posicionado no canto direito da faixa verde (desktop) */
+    position: absolute;
+    right: 12px; /* distância do canto da janela */
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
-    flex-shrink: 0;
-    order: 999; /* garante que ele seja o último */
+    height: 44px; /* mesma altura dos links */
+    padding: 0 8px;
+    z-index: 1001;
 }
+
 .theme-switch {
     width: 40px;
     height: 40px;
@@ -326,7 +337,7 @@ body {
     align-items: center;
     flex-wrap: wrap;
     gap: 2px;
-    flex: 1;
+    width: 100%;
 }
 
 
@@ -417,7 +428,35 @@ body {
         gap: 0.5rem;
     }
 
-    
+    /* Posiciona o toggle fixo no canto direito da faixa (mobile), evitando sobreposição
+       com o botão hambúrguer que permanece no fluxo à esquerda. */
+    .nav-theme-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        height: 44px;
+        padding: 0 8px;
+        z-index: 1001;
+    }
+
+    /* Garante que o hambúrguer fique visível à esquerda acima do conteúdo */
+    .nav-mobile-btn {
+        order: 1;
+        position: relative;
+        z-index: 1002;
+    }
+
+    /* Forçar links do menu mobile a branco em todos os estados (acessibilidade/contraste) */
+    .nav-links-wrapper .nav-link:link,
+    .nav-links-wrapper .nav-link:visited,
+    .nav-links-wrapper .nav-link:hover,
+    .nav-links-wrapper .nav-link:focus,
+    .nav-links-wrapper .nav-link:active {
+        color: #ffffff;
+    }
     
     .nav-config-btn {
         flex-shrink: 0;

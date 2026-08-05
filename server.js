@@ -2,39 +2,29 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const connectDB = require("./config/db");
+const Admin = require("./models/Admin");
+const Turma = require("./models/Turma");
+const Evento = require("./models/Evento");
+const Contato = require("./models/Contato");
 
 const app = express();
+
+// Middlewares Globais
 app.use(cors());
 app.use(express.json());
-
-// Autenticação via token Bearer e headers compatíveis
-const tokenStore = {};
-const gerarToken = () => Math.random().toString(36).substring(2) + Date.now().toString(36);
-
-const autenticarToken = (req, res, next) => {
-    const authValue = req.headers['authorization'] || req.headers['Authorization'];
-    if (typeof authValue === 'string' && authValue.startsWith('Bearer ')) {
-        const token = authValue.slice(7).trim();
-        const usuario = tokenStore[token];
-        if (usuario) {
-            req.user = usuario;
-            if (!req.headers['x-usuario-email']) req.headers['x-usuario-email'] = usuario.email;
-            if (!req.headers['x-usuario-role']) req.headers['x-usuario-role'] = usuario.role;
-            if (usuario.role === 'turma_admin' && !req.headers['x-usuario-turma']) req.headers['x-usuario-turma'] = usuario.turmaId;
-            if (usuario.role === 'admin' && !req.headers['x-admin-auth']) req.headers['x-admin-auth'] = true;
-        }
-    }
-    next();
-};
-app.use(autenticarToken);
 
 // Servir frontend estático
 app.use(express.static(path.join(__dirname, '..', 'frontend-vanilla')));
 
+// Definição dos Caminhos dos Arquivos JSON Restantes para Migração
 const ADMINS_FILE = path.join(__dirname, 'admins.json');
-const DB_FILE = path.join(__dirname, 'eventos.json');
-const CONTATOS_FILE = path.join(__dirname, 'contatos.json');
 const TURMAS_FILE = path.join(__dirname, 'turmas.json');
+const CONTATOS_FILE = path.join(__dirname, 'contatos.json');
+
+// =============================
+// FUNÇÕES AUXILIARES (I/O)
+// =============================
 
 const lerAdmins = () => {
     try {
@@ -48,79 +38,53 @@ const lerAdmins = () => {
 
 const salvarAdmins = (dados) => fs.writeFileSync(ADMINS_FILE, JSON.stringify(dados, null, 2));
 
-const lerBanco = () => {
+const lerContatos = () => {
     try {
-        if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify([]));
-        return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+        if (!fs.existsSync(CONTATOS_FILE)) fs.writeFileSync(CONTATOS_FILE, JSON.stringify([]));
+        return JSON.parse(fs.readFileSync(CONTATOS_FILE, 'utf8'));
     } catch (e) {
-        console.error("Erro ao ler eventos.json:", e);
+        console.error("Erro ao ler contatos.json:", e);
         return [];
     }
-};
-
-const salvarBanco = (dados) => fs.writeFileSync(DB_FILE, JSON.stringify(dados, null, 2));
-
-const lerContatos = () => {
-    if (!fs.existsSync(CONTATOS_FILE)) fs.writeFileSync(CONTATOS_FILE, JSON.stringify([]));
-    return JSON.parse(fs.readFileSync(CONTATOS_FILE, 'utf8'));
 };
 
 const salvarContatos = (dados) => fs.writeFileSync(CONTATOS_FILE, JSON.stringify(dados, null, 2));
 
-const lerTurmas = () => {
-    try {
-        if (!fs.existsSync(TURMAS_FILE)) fs.writeFileSync(TURMAS_FILE, JSON.stringify([]));
-        return JSON.parse(fs.readFileSync(TURMAS_FILE, 'utf8'));
-    } catch (e) {
-        console.error("Erro ao ler turmas.json:", e);
-        return [];
-    }
-};
-
-const salvarTurmas = (dados) => fs.writeFileSync(TURMAS_FILE, JSON.stringify(dados, null, 2));
-
 // =============================
-// MIDDLEWARE DE AUTORIZAÇÃO POR TURMA
+// MIDDLEWARE DE AUTORIZAÇÃO
 // =============================
 
-/**
- * Middleware para validar acesso à turma
- * Líder só pode acessar eventos da sua turma
- * Admin pode acessar todas as turmas
- */
-const validarAcessoTurma = (req, res, next) => {
-    // Extrai dados do request
+const validarAcessoTurma = async (req, res, next) => {
     const turmaIdHeader = req.headers['x-turma-id'];
     const turmaIdBody = req.body?.turmaId;
-    const turmaIdParam = req.params?.id;  // Para eventos específicos
-    const usuarioLider = req.headers['x-usuario-role'];  // 'lider', 'turma_admin' ou 'admin'
-    const usuarioTurmaId = req.headers['x-usuario-turma'];  // turmaId do usuário logado
+    const turmaIdParam = req.params?.id;  
+    const usuarioLider = req.headers['x-usuario-role'];  
+    const usuarioTurmaId = req.headers['x-usuario-turma'];  
     const usuarioEmail = req.headers['x-usuario-email'];
 
     console.log(`\n[AUTH] ${req.method} ${req.path}`);
     console.log(`  - Role: ${usuarioLider}, Turma do Usuário: ${usuarioTurmaId}`);
     console.log(`  - Email: ${usuarioEmail}`);
 
-    // Pegar turmaId da requisição
     let turmaIdRequisicao = turmaIdHeader || turmaIdBody;
 
-    // Se é DELETE/PUT, precisa validar o evento existente
     if ((req.method === 'PUT' || req.method === 'DELETE') && turmaIdParam) {
-        const evs = lerBanco();
-        const evento = evs.find(e => e._id === turmaIdParam);
-        if (evento) {
-            turmaIdRequisicao = evento.turmaId;
-            console.log(`  - Turma do evento: ${evento.turmaId}`);
+        try {
+            const evento = await Evento.findById(turmaIdParam);
+            if (evento) {
+                turmaIdRequisicao = evento.turmaId;
+                console.log(`  - Turma do evento: ${evento.turmaId}`);
+            }
+        } catch (e) {
+            console.error("Erro ao buscar evento no middleware de auth:", e);
         }
     }
 
-    // ✅ ADMIN sempre pode acessar
     if (usuarioLider === 'admin' || req.headers['x-admin-auth']) {
         console.log(`  ✅ Admin autorizado`);
         return next();
     }
 
-    // ❌ LÍDER só pode acessar sua turma
     if (usuarioLider === 'turma_admin' || usuarioLider === 'lider') {
         if (!usuarioTurmaId) {
             console.warn(`🚫 [SEGURANÇA] Requisição de líder sem turmaId do usuário:`, {
@@ -132,7 +96,6 @@ const validarAcessoTurma = (req, res, next) => {
             return res.status(401).json({ error: "Usuário não autenticado corretamente." });
         }
 
-        // Se turmaId não bate, REJEITAR
         if (turmaIdRequisicao && turmaIdRequisicao !== '__geral__' && turmaIdRequisicao !== usuarioTurmaId) {
             console.warn(`🚫 [SEGURANÇA] Tentativa não autorizada de acesso à turma:`, {
                 usuarioTurmaId,
@@ -154,7 +117,6 @@ const validarAcessoTurma = (req, res, next) => {
         return next();
     }
 
-    // ❌ Se não é admin nem líder, rejeitar
     console.warn(`🚫 [SEGURANÇA] Acesso não autorizado:`, {
         role: usuarioLider,
         method: req.method,
@@ -166,8 +128,14 @@ const validarAcessoTurma = (req, res, next) => {
     res.status(403).json({ error: "Acesso não autorizado." });
 };
 
+// Mapeamento interno para compatibilidade com o middleware existente
+const authMiddleware = validarAcessoTurma;
+
 // =============================
-app.post('/auth/login', (req, res) => {
+// ROTAS DE AUTENTICAÇÃO (AUTH)
+// =============================
+
+app.post('/auth/login', async (req, res) => {
     console.log("--- DEBUG LOGIN (v6.1 - DETALHADO) ---");
     const { email, senha, password } = req.body;
     const passInput = (senha || password || "").trim();
@@ -175,19 +143,9 @@ app.post('/auth/login', (req, res) => {
 
     console.log(`Recebido: Email=[${emailInput}], Senha=[${passInput}]`);
 
-    // 1. Tentar encontrar em ADMINS
-    const admins = lerAdmins();
-    console.log(`Buscando em ${admins.length} admins...`);
-    const adminUser = admins.find(a => {
-        const storedEmail = (a.email || "").trim().toLowerCase();
-        const storedPass = (a.password || "").trim();
-
-        const matchEmail = storedEmail === emailInput;
-        const matchPass = storedPass === passInput;
-
-        if (matchEmail) console.log(`  - Email coincide com admin: ${a.nome}`);
-        if (matchEmail && matchPass) return true;
-        return false;
+    const adminUser = await Admin.findOne({
+        email: emailInput,
+        password: passInput
     });
 
     if (adminUser) {
@@ -195,16 +153,6 @@ app.post('/auth/login', (req, res) => {
         if (adminUser.status === 'pendente') {
             return res.status(403).json({ error: "Aguardando aprovação do Administrador Principal." });
         }
-        const token = gerarToken();
-        tokenStore[token] = {
-            _id: adminUser._id,
-            nome: adminUser.nome,
-            email: adminUser.email,
-            cargo: adminUser.cargo || 'admin',
-            role: 'admin',
-            status: adminUser.status,
-            issuedAt: Date.now()
-        };
         return res.json({
             user: {
                 _id: adminUser._id,
@@ -213,38 +161,21 @@ app.post('/auth/login', (req, res) => {
                 cargo: adminUser.cargo || 'admin',
                 role: 'admin',
                 status: adminUser.status
-            },
-            token
+            }
         });
     }
 
-    // 2. Se não for admin, tentar encontrar em TURMAS (Líder ou Vice)
-    const turmas = lerTurmas();
+    const turmas = await Turma.find();
     console.log(`Buscando em ${turmas.length} turmas...`);
+
     for (const t of turmas) {
-        const storedLiderEmail = (t.lider.email || "").trim().toLowerCase();
-        const storedLiderPass = (t.lider.senha || "").trim();
-        const storedViceEmail = (t.vice.email || "").trim().toLowerCase();
-        const storedVicePass = (t.vice.senha || "").trim();
+        const storedLiderEmail = (t.lider?.email || "").trim().toLowerCase();
+        const storedLiderPass = (t.lider?.senha || "").trim();
+        const storedViceEmail = (t.vice?.email || "").trim().toLowerCase();
+        const storedVicePass = (t.vice?.senha || "").trim();
 
-        const matchLiderEmail = storedLiderEmail === emailInput;
-        const matchLiderPass = storedLiderPass === passInput;
-        const matchViceEmail = storedViceEmail === emailInput;
-        const matchVicePass = storedVicePass === passInput;
-
-        if (matchLiderEmail && matchLiderPass) {
+        if (storedLiderEmail === emailInput && storedLiderPass === passInput) {
             console.log(`✅ Líder autenticado: ${t.lider.nome} (Turma: ${t.nome})`);
-            const token = gerarToken();
-            tokenStore[token] = {
-                _id: t.id,
-                nome: t.lider.nome,
-                email: emailInput,
-                cargo: 'líder',
-                role: 'turma_admin',
-                turmaId: t.id,
-                turmaNome: t.nome,
-                issuedAt: Date.now()
-            };
             return res.json({
                 user: {
                     _id: t.id,
@@ -254,23 +185,12 @@ app.post('/auth/login', (req, res) => {
                     role: 'turma_admin',
                     turmaId: t.id,
                     turmaNome: t.nome
-                },
-                token
+                }
             });
         }
-        if (matchViceEmail && matchVicePass) {
+
+        if (storedViceEmail === emailInput && storedVicePass === passInput) {
             console.log(`✅ Vice-Líder autenticado: ${t.vice.nome} (Turma: ${t.nome})`);
-            const token = gerarToken();
-            tokenStore[token] = {
-                _id: t.id,
-                nome: t.vice.nome,
-                email: emailInput,
-                cargo: 'vice-líder',
-                role: 'turma_admin',
-                turmaId: t.id,
-                turmaNome: t.nome,
-                issuedAt: Date.now()
-            };
             return res.json({
                 user: {
                     _id: t.id,
@@ -280,8 +200,7 @@ app.post('/auth/login', (req, res) => {
                     role: 'turma_admin',
                     turmaId: t.id,
                     turmaNome: t.nome
-                },
-                token
+                }
             });
         }
     }
@@ -290,7 +209,6 @@ app.post('/auth/login', (req, res) => {
     res.status(401).json({ error: "E-mail ou senha incorretos." });
 });
 
-// REGISTRO
 app.post('/auth/register', (req, res) => {
     const admins = lerAdmins();
     const { nome, email, senha } = req.body;
@@ -315,7 +233,6 @@ app.post('/auth/register', (req, res) => {
     res.status(201).json({ message: "OK", user: novo });
 });
 
-// ATUALIZAR PERFIL (MINHA CONTA)
 app.put('/auth/perfil', (req, res) => {
     const { adminId, nome, email, senhaAtual } = req.body;
     const adms = lerAdmins();
@@ -323,12 +240,10 @@ app.put('/auth/perfil', (req, res) => {
 
     if (idx === -1) return res.status(404).json({ error: "Usuário não encontrado." });
 
-    // Validar senha atual por segurança
     if (adms[idx].password !== senhaAtual) {
         return res.status(401).json({ error: "Senha atual incorreta." });
     }
 
-    // Verificar se novo e-mail já existe em outra conta
     const emailLower = email.trim().toLowerCase();
     const existe = adms.find(a => a.email.toLowerCase() === emailLower && a._id !== adminId);
     if (existe) return res.status(400).json({ error: "E-mail já está em uso por outro administrador." });
@@ -337,10 +252,9 @@ app.put('/auth/perfil', (req, res) => {
     adms[idx].email = emailLower;
 
     salvarAdmins(adms);
-    res.json({ message: "Perfil atualizado!" });
+    res.json({ message: "Perfil updated!" });
 });
 
-// ALTERAR SENHA (MINHA CONTA)
 app.put('/auth/senha', (req, res) => {
     const { adminId, senhaAtual, novaSenha } = req.body;
     const adms = lerAdmins();
@@ -357,38 +271,31 @@ app.put('/auth/senha', (req, res) => {
     res.json({ message: "Senha alterada!" });
 });
 
-// ALTERAR SENHA (MINHA CONTA - LÍDER/VICE)
-app.put('/auth/lider/senha', (req, res) => {
+app.put('/auth/lider/senha', async (req, res) => {
     const { email, senhaAtual, novaSenha } = req.body;
-    const turmas = lerTurmas();
-    let alterado = false;
-
     const emailInput = (email || "").trim().toLowerCase();
 
-    for (const t of turmas) {
-        if (t.lider.email.toLowerCase() === emailInput) {
-            if (t.lider.senha !== senhaAtual) return res.status(401).json({ error: "Senha atual incorreta." });
-            t.lider.senha = novaSenha.trim();
-            alterado = true;
-            break;
-        }
-        if (t.vice.email.toLowerCase() === emailInput) {
-            if (t.vice.senha !== senhaAtual) return res.status(401).json({ error: "Senha atual incorreta." });
-            t.vice.senha = novaSenha.trim();
-            alterado = true;
-            break;
-        }
+    const t = await Turma.findOne({
+        $or: [
+            { "lider.email": emailInput },
+            { "vice.email": emailInput }
+        ]
+    });
+
+    if (!t) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    if (t.lider && t.lider.email.toLowerCase() === emailInput) {
+        if (t.lider.senha !== senhaAtual) return res.status(401).json({ error: "Senha atual incorreta." });
+        t.lider.senha = novaSenha.trim();
+    } else if (t.vice && t.vice.email.toLowerCase() === emailInput) {
+        if (t.vice.senha !== senhaAtual) return res.status(401).json({ error: "Senha atual incorreta." });
+        t.vice.senha = novaSenha.trim();
     }
 
-    if (alterado) {
-        salvarTurmas(turmas);
-        return res.json({ message: "Senha alterada com sucesso!" });
-    }
-
-    res.status(404).json({ error: "Usuário não encontrado." });
+    await t.save();
+    return res.json({ message: "Senha alterada com sucesso!" });
 });
 
-// RESETAR SENHA DE OUTRO ADMIN (APENAS PRINCIPAL)
 app.put('/auth/admins/reset-password/:id', (req, res) => {
     const { novaSenha } = req.body;
     if (!novaSenha || novaSenha.trim().length < 4) {
@@ -404,7 +311,6 @@ app.put('/auth/admins/reset-password/:id', (req, res) => {
     res.json({ message: "Senha alterada com sucesso!" });
 });
 
-// RECUPERAR CONTA PRINCIPAL COM CÓDIGO
 app.post('/auth/recover-principal', (req, res) => {
     const { email, recoveryCode, novaSenha } = req.body;
     const adms = lerAdmins();
@@ -421,7 +327,6 @@ app.post('/auth/recover-principal', (req, res) => {
     res.json({ message: "Senha redefinida com sucesso!" });
 });
 
-// BUSCAR CÓDIGO DE RECUPERAÇÃO (PARA EXIBIR NO PERFIL)
 app.get('/auth/recovery-info/:adminId', (req, res) => {
     const adms = lerAdmins();
     const user = adms.find(a => a._id === req.params.adminId);
@@ -429,258 +334,258 @@ app.get('/auth/recovery-info/:adminId', (req, res) => {
     res.json({ recoveryCode: user.recoveryCode });
 });
 
-// EVENTOS
-// ✅ SEGURANÇA: GET de todos os eventos - apenas admins
-app.get('/eventos', (req, res) => {
-    const usuarioRole = req.headers['x-usuario-role'];
-    const usuarioEmail = req.headers['x-usuario-email'];
-    const turmaIdSolicitada = req.query.turmaId;
-    const evs = lerBanco();
+// =============================
+// ROTAS DE EVENTOS (100% MONGODB)
+// =============================
 
-    if (turmaIdSolicitada) {
-        const filtrados = evs.filter(e => {
-            const tipo = (e.tipo || '').toLowerCase();
-            return (e.turmaId == turmaIdSolicitada && tipo === 'turma') || tipo === 'geral';
-        });
-        return res.json(filtrados);
+app.get('/eventos', async (req, res) => {
+    try {
+        const usuarioRole = req.headers['x-usuario-role'];
+        const usuarioEmail = req.headers['x-usuario-email'];
+        if (usuarioRole === 'turma_admin') {
+            console.warn(`🚫 [SEGURANÇA] Líder tentou listar todos os eventos:`, {
+                email: usuarioEmail,
+                ip: req.ip
+            });
+            return res.status(403).json({
+                error: "Você não tem permissão para listar todos os eventos. Use /eventos/turma/:id"
+            });
+        }
+        const eventos = await Evento.find();
+        res.json(eventos);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    // ❌ Líderes NÃO podem listar todos os eventos
-    if (usuarioRole === 'turma_admin') {
-        console.warn(`🚫 [SEGURANÇA] Líder tentou listar todos os eventos:`, {
-            email: usuarioEmail,
-            ip: req.ip
-        });
-        return res.status(403).json({
-            error: "Você não tem permissão para listar todos os eventos. Use /eventos/turma/:id ou /eventos?turmaId=<id>"
-        });
-    }
-
-    // ✅ Apenas admins podem listar todos os eventos
-    res.json(evs);
 });
 
-app.get('/eventos/geral', (req, res) => {
-    const evs = lerBanco();
-    // Agora filtramos explicitamente pelo campo 'tipo'
-    const filtrados = evs.filter(e => e.tipo === 'geral');
-    res.json(filtrados);
+app.get('/eventos/geral', async (req, res) => {
+    try {
+        const eventos = await Evento.find({ tipo: 'geral' });
+        res.json(eventos);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/eventos/turma/:id', (req, res) => {
-    // ✅ Todos podem VER eventos de qualquer turma (com seus filtros)
-    // Restrições de modificação estão no middleware POST/PUT/DELETE
-    const turmaIdSolicitada = req.params.id;
-
-    const evs = lerBanco();
-    // Filtra por ID da turma (tipo turma) OU eventos institucionais (tipo geral)
-    const filtrados = evs.filter(e => (e.turmaId == turmaIdSolicitada && e.tipo === 'turma') || e.tipo === 'geral');
-    res.json(filtrados);
+app.get('/eventos/turma/:id', async (req, res) => {
+    try {
+        const turmaIdSolicitada = req.params.id;
+        const eventos = await Evento.find({ $or: [ { turmaId: turmaIdSolicitada, tipo: 'turma' }, { tipo: 'geral' } ] });
+        res.json(eventos);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// ✅ POST eventos - COM VALIDAÇÃO DE TURMA
-app.post('/eventos', validarAcessoTurma, (req, res) => {
-    const evs = lerBanco();
-    const usuarioRole = req.headers['x-usuario-role'];
-    const usuarioTurmaId = req.headers['x-usuario-turma'];
-    const usuarioEmail = req.headers['x-usuario-email'];
+app.post("/eventos", authMiddleware, async (req, res) => {
+  try {
+    console.log("[EVENTO] Criando evento:", req.body);
 
-    // ❌ Líder NÃO pode criar eventos gerais
-    if (usuarioRole === 'turma_admin' && req.body.tipo === 'geral') {
-        console.warn(`🚫 [SEGURANÇA] Líder tentou criar evento GERAL:`, {
-            email: usuarioEmail,
-            turma: usuarioTurmaId
-        });
-        return res.status(403).json({
-            error: "Líderes não podem criar eventos gerais. Entre em contato com o administrador."
-        });
-    }
-
-    // ❌ Líder NÃO pode especificar turmaId diferente da sua
-    if (usuarioRole === 'turma_admin' && req.body.turmaId !== usuarioTurmaId) {
-        console.warn(`🚫 [SEGURANÇA] Líder tentou criar evento em outra turma:`, {
-            email: usuarioEmail,
-            turmaSua: usuarioTurmaId,
-            turmaRequisitada: req.body.turmaId
-        });
-        return res.status(403).json({
-            error: "Você só pode criar eventos da sua própria turma."
-        });
-    }
-
-    // ✅ Garantir que o turmaId está correto
-    const novoEvento = {
-        _id: Date.now().toString(),
-        ...req.body,
-        turmaId: usuarioRole === 'turma_admin' ? usuarioTurmaId : req.body.turmaId,
-        criadoPor: usuarioRole,
-        usuarioId: usuarioEmail || 'unknown',
-        criadoEm: new Date().toISOString()
-    };
-
-    console.log(`✅ [EVENTO] Novo evento criado:`, {
-        id: novoEvento._id,
-        turma: novoEvento.turmaId,
-        tipo: novoEvento.tipo,
-        criador: usuarioRole
+    const evento = new Evento({
+      titulo: req.body.titulo,
+      tipo: req.body.tipo,
+      categoria: req.body.categoria,
+      data: req.body.data,
+      hora: req.body.hora,
+      descricao: req.body.descricao,
+      turmaId: req.body.turmaId,
+      criadoPor: req.body.criadoPor,
+      usuarioId: req.body.usuarioId
     });
 
-    evs.push(novoEvento);
-    salvarBanco(evs);
-    res.json(novoEvento);
+    await evento.save();
+
+    console.log("✅ Evento salvo no MongoDB:", evento);
+
+    res.status(201).json(evento);
+
+  } catch (err) {
+    console.error("❌ Erro ao salvar evento:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// ✅ PUT eventos - COM VALIDAÇÃO DE TURMA
-app.put('/eventos/:id', validarAcessoTurma, (req, res) => {
-    const evs = lerBanco();
-    const i = evs.findIndex(e => e._id === req.params.id);
-    const usuarioRole = req.headers['x-usuario-role'];
-    const usuarioTurmaId = req.headers['x-usuario-turma'];
-    const usuarioEmail = req.headers['x-usuario-email'];
-
-    if (i === -1) {
-        return res.status(404).json({ error: "Evento não encontrado." });
+app.put('/eventos/:id', authMiddleware, async (req, res) => {
+    try {
+        const eventoAntigo = await Evento.findById(req.params.id);
+        if (!eventoAntigo) return res.status(404).json({ error: "Evento não encontrado." });
+        if (req.body.tipo && req.body.tipo !== eventoAntigo.tipo) {
+            return res.status(403).json({ error: "Não é permitido mudar o tipo de evento." });
+        }
+        if (req.body.turmaId && req.body.turmaId !== eventoAntigo.turmaId) {
+            return res.status(403).json({ error: "Não é permitido mudar a turma do evento." });
+        }
+        const evento = await Evento.findByIdAndUpdate(
+            req.params.id,
+            { ...req.body, updatedAt: new Date().toISOString() },
+            { returnDocument: "after" }
+        );
+        res.json(evento);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    const eventoAntigo = evs[i];
-
-    // ❌ Não permitir mudar tipo de evento (turma → geral ou vice-versa)
-    if (req.body.tipo && req.body.tipo !== eventoAntigo.tipo) {
-        console.warn(`🚫 [SEGURANÇA] Tentativa de mudar tipo de evento:`, {
-            eventoId: req.params.id,
-            tipoAntigo: eventoAntigo.tipo,
-            tipoNovo: req.body.tipo,
-            usuario: usuarioEmail
-        });
-        return res.status(403).json({
-            error: "Não é permitido mudar o tipo de evento."
-        });
-    }
-
-    // ❌ Não permitir mudar turmaId do evento
-    if (req.body.turmaId && req.body.turmaId !== eventoAntigo.turmaId) {
-        console.warn(`🚫 [SEGURANÇA] Tentativa de mudar turmaId do evento:`, {
-            eventoId: req.params.id,
-            turmaAntiga: eventoAntigo.turmaId,
-            turmaNova: req.body.turmaId,
-            usuario: usuarioEmail
-        });
-        return res.status(403).json({
-            error: "Não é permitido mudar a turma do evento."
-        });
-    }
-
-    evs[i] = { ...evs[i], ...req.body, updatedAt: new Date().toISOString() };
-
-    console.log(`✅ [EVENTO] Evento atualizado:`, {
-        id: req.params.id,
-        turma: evs[i].turmaId,
-        atualizadoPor: usuarioRole
-    });
-
-    salvarBanco(evs);
-    res.json(evs[i]);
 });
 
-// ✅ DELETE eventos - COM VALIDAÇÃO DE TURMA
-app.delete('/eventos/:id', validarAcessoTurma, (req, res) => {
-    const evs = lerBanco();
-    const eventoParaDeleter = evs.find(e => e._id === req.params.id);
-    const usuarioRole = req.headers['x-usuario-role'];
-    const usuarioEmail = req.headers['x-usuario-email'];
-
-    if (!eventoParaDeleter) {
-        return res.status(404).json({ error: "Evento não encontrado." });
+app.delete('/eventos/:id', authMiddleware, async (req, res) => {
+    try {
+        const resultado = await Evento.findByIdAndDelete(req.params.id);
+        if (!resultado) return res.status(404).json({ error: "Evento não encontrado." });
+        res.json({ message: 'Evento removido com sucesso' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    console.log(`✅ [EVENTO] Evento deletado:`, {
-        id: req.params.id,
-        turma: eventoParaDeleter.turmaId,
-        deletadoPor: usuarioRole
-    });
-
-    const filtrados = evs.filter(e => e._id !== req.params.id);
-    salvarBanco(filtrados);
-    res.json({ ok: true, removido: req.params.id });
 });
 
-// CONTATOS
-app.get('/contatos', (req, res) => res.json(lerContatos()));
-app.post('/contatos', (req, res) => {
-    const c = lerContatos();
-    const novo = { _id: Date.now().toString(), ...req.body };
-    c.push(novo);
-    salvarContatos(c);
-    res.json(novo);
+// =============================
+// ROTAS DE CONTATOS (100% MONGODB)
+// =============================
+
+app.post("/contatos", authMiddleware, async (req, res) => {
+  try {
+    const contato = new Contato(req.body);
+    await contato.save();
+
+    return res.status(201).json(contato);
+  } catch (err) {
+    console.error("Erro ao criar contato:", err);
+    return res.status(500).json({ error: err.message });
+  }
 });
-app.delete('/contatos/:id', (req, res) => {
-    const filtrados = lerContatos().filter(c => c._id !== req.params.id);
-    salvarContatos(filtrados);
+
+app.get('/contatos', authMiddleware, async (req, res) => {
+  try {
+    const contatos = await Contato.find();
+    res.json(contatos);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar contatos' });
+  }
+});
+
+app.get('/contatos/:id', authMiddleware, async (req, res) => {
+  try {
+    const contato = await Contato.findById(req.params.id);
+    if (!contato) {
+      return res.status(404).json({ error: 'Contato não encontrado' });
+    }
+    res.json(contato);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar contato' });
+  }
+});
+
+app.put("/contatos/:id", authMiddleware, async (req, res) => {
+  try {
+    const contato = await Contato.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { returnDocument: "after" }
+    );
+
+    return res.json(contato);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/contatos/:id", authMiddleware, async (req, res) => {
+  try {
+    await Contato.findByIdAndDelete(req.params.id);
+    return res.json({ message: "Contato removido com sucesso" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================
+// ROTAS DE ADMINS (GERENCIAL)
+// =============================
+
+app.get('/admins', (req, res) => res.json(lerAdmins().map(({ password, recoveryCode, ...rest }) => rest)));
+
+app.put('/admins/aprovar/:id', (req, res) => {
+    const adms = lerAdmins();
+    const i = adms.findIndex(a => a._id === req.params.id);
+    if (i !== -1) { 
+        adms[i].status = 'ativo'; 
+        salvarAdmins(adms); 
+        res.json(adms[i]); 
+    } else {
+        res.status(404).json({ error: "N/A" });
+    }
+});
+
+app.delete('/admins/:id', (req, res) => {
+    const adms = lerAdmins();
+    const novos = adms.filter(a => a._id !== req.params.id);
+    salvarAdmins(novos);
     res.json({ ok: true });
 });
 
-// ADMINS LIST
-app.get('/admins', (req, res) => res.json(lerAdmins().map(({ password, recoveryCode, ...rest }) => rest)));
+// =============================
+// ROTAS DE TURMAS (100% MONGODB)
+// =============================
 
-// TURMAS CRUD - ✅ Apenas admins podem gerenciar turmas
-app.get('/turmas', (req, res) => {
-    // ✅ Qualquer um pode VER turmas (para login e seleção)
-    res.json(lerTurmas());
+app.get('/turmas', async (req, res) => {
+    const turmas = await Turma.find();
+    res.json(turmas);
 });
 
-app.post('/turmas', (req, res) => {
-    // ❌ Apenas admins podem criar turmas
+app.post('/turmas', async (req, res) => {
     const usuarioRole = req.headers['x-usuario-role'];
+
     if (usuarioRole !== 'admin' && !req.headers['x-admin-auth']) {
         return res.status(403).json({ error: "Apenas administradores podem criar turmas." });
     }
 
-    const t = lerTurmas();
-    const novo = { ...req.body };
+    const novo = req.body;
+
     if (!novo.id) novo.id = Date.now().toString();
-    t.push(novo);
-    salvarTurmas(t);
-    res.status(201).json(novo);
+
+    const turma = await Turma.create(novo);
+
+    res.status(201).json(turma);
 });
 
-app.put('/turmas/:id', (req, res) => {
-    // ❌ Apenas admins podem editar turmas
+app.put('/turmas/:id', async (req, res) => {
     const usuarioRole = req.headers['x-usuario-role'];
+
     if (usuarioRole !== 'admin' && !req.headers['x-admin-auth']) {
         return res.status(403).json({ error: "Apenas administradores podem editar turmas." });
     }
 
-    const t = lerTurmas();
-    const idx = t.findIndex(item => item.id == req.params.id);
-    if (idx !== -1) {
-        t[idx] = { ...t[idx], ...req.body };
-        salvarTurmas(t);
-        res.json(t[idx]);
-    } else {
-        res.status(404).json({ error: "Turma não encontrada" });
+    const turma = await Turma.findOneAndUpdate(
+        { id: req.params.id },
+        { $set: req.body },
+        { returnDocument: "after" }
+    );
+
+    if (!turma) {
+        return res.status(404).json({ error: "Turma não encontrada" });
     }
+
+    res.json(turma);
 });
 
-app.delete('/turmas/:id', (req, res) => {
-    // ❌ Apenas admins podem deletar turmas
+app.delete('/turmas/:id', async (req, res) => {
     const usuarioRole = req.headers['x-usuario-role'];
+
     if (usuarioRole !== 'admin' && !req.headers['x-admin-auth']) {
         return res.status(403).json({ error: "Apenas administradores podem deletar turmas." });
     }
 
-    const t = lerTurmas();
-    const filtrados = t.filter(item => item.id != req.params.id);
-    salvarTurmas(filtrados);
+    const turma = await Turma.findOneAndDelete({ id: req.params.id });
 
-    // Cascade delete: remover eventos desta turma
-    const evs = lerBanco();
-    const evsRestantes = evs.filter(e => e.turmaId != req.params.id);
-    salvarBanco(evsRestantes);
+    if (!turma) {
+        return res.status(404).json({ error: "Turma não encontrada" });
+    }
 
-    res.json({ ok: true, removedEvents: evs.length - evsRestantes.length });
+    res.json({ ok: true });
 });
 
-// 🧪 ROTA DE DEBUG - VALIDAR HEADERS
+// =============================
+// ROTAS DE DEBUG & MIGRAÇÃO
+// =============================
+
 app.post('/debug/validar-headers', (req, res) => {
     res.json({
         headers: {
@@ -695,27 +600,65 @@ app.post('/debug/validar-headers', (req, res) => {
     });
 });
 
-app.put('/admins/aprovar/:id', (req, res) => {
-    const adms = lerAdmins();
-    const i = adms.findIndex(a => a._id === req.params.id);
-    if (i !== -1) { adms[i].status = 'ativo'; salvarAdmins(adms); res.json(adms[i]); }
-    else res.status(404).json({ error: "N/A" });
+// Migrar admins json → MongoDB
+app.post("/migrar/admins", async (req, res) => {
+    try {
+        const dados = JSON.parse(fs.readFileSync(ADMINS_FILE, "utf8"));
+        let criados = 0;
+
+        for (const admin of dados) {
+            const existe = await Admin.findOne({ email: admin.email });
+            if (!existe) {
+                await Admin.create(admin);
+                criados++;
+            }
+        }
+        res.json({ message: "Migração concluída", criados });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erro na migração" });
+    }
 });
-app.delete('/admins/:id', (req, res) => {
-    const adms = lerAdmins();
-    const novos = adms.filter(a => a._id !== req.params.id);
-    salvarAdmins(novos);
-    res.json({ ok: true });
+
+// Migrar turmas json → MongoDB
+app.post("/migrar/turmas", async (req, res) => {
+    try {
+        const dados = JSON.parse(fs.readFileSync(TURMAS_FILE, "utf8"));
+        let criados = 0;
+
+        for (const turma of dados) {
+            const existe = await Turma.findOne({ id: turma.id });
+
+            if (!existe) {
+                await Turma.create(turma);
+                criados++;
+            }
+        }
+
+        res.json({
+            message: "Migração de turmas concluída",
+            criados
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Erro na migração de turmas" });
+    }
 });
+
+// =============================
+// INICIALIZAÇÃO DO SERVIDOR
+// =============================
+
+connectDB();
 
 const PORT = 3000;
 const server = app.listen(PORT, () => {
-    console.log(`--- SERVIDOR v5 REPARADO NA PORTA ${PORT} ---`);
+    console.log(`--- SERVIDOR REPARADO NA PORTA ${PORT} ---`);
     console.log(`--- Acesso local: http://localhost:${PORT} ---`);
 }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
         console.error(`!!! ERRO: A porta ${PORT} já está em uso por outro programa. !!!`);
-        console.error(`Certifique-se de fechar outras janelas do terminal que estejam rodando o servidor.`);
     } else {
         console.error("Erro ao iniciar o servidor:", err);
     }

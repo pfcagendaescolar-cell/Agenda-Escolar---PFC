@@ -14,6 +14,9 @@ const FERIADOS_ESTADUAIS = [
 ];
 
 const PRIORIDADES = { "prova": 1, "trabalho": 2, "tarefa": 3, "evento": 4 };
+const SESSAO_LIDER_KEY = 'ifpr_sessao_lider_v1';
+const SESSAO_LIDER_LEGACY_FLAG = 'ifpr_lider_logado';
+const SESSAO_LIDER_LEGACY_USER = 'ifpr_user_logged';
 
 // =============================
 // SISTEMA DE NOTIFICAÇÕES (Toast)
@@ -75,9 +78,106 @@ function showInfo(message, duration) {
 let dataAtualDeVisualizacao = new Date();
 let eventosCarregados = [];   // Eventos do servidor (turma + gerais)
 let feriadosNacionais = {};
-let liderLogado = localStorage.getItem('ifpr_lider_logado') === 'true';
 let turmaAtual = JSON.parse(localStorage.getItem('ifpr_selected_turma_v1')) || null;
 let turmasCadastradas = [];   // Turmas carregadas da API
+
+// =============================
+// SESSAO DO LIDER
+// =============================
+
+function salvarSessao(usuario) {
+    if (!usuario || !usuario.email) {
+        limparSessao();
+        return null;
+    }
+
+    const sessao = {
+        usuario,
+        autenticadoEm: new Date().toISOString()
+    };
+
+    localStorage.setItem(SESSAO_LIDER_KEY, JSON.stringify(sessao));
+
+    // Remove chaves antigas para evitar estados contraditorios.
+    localStorage.removeItem(SESSAO_LIDER_LEGACY_FLAG);
+    localStorage.removeItem(SESSAO_LIDER_LEGACY_USER);
+
+    return sessao;
+}
+
+function obterSessao() {
+    try {
+        const sessaoSalva = JSON.parse(localStorage.getItem(SESSAO_LIDER_KEY));
+
+        if (sessaoSalva && sessaoSalva.usuario && sessaoSalva.usuario.email) {
+            return sessaoSalva;
+        }
+    } catch (erro) {
+        console.warn('Sessao salva invalida. Limpando dados locais.', erro);
+        limparSessao();
+        return null;
+    }
+
+    // Compatibilidade com logins feitos antes da centralizacao da sessao.
+    try {
+        const liderLegadoLogado = localStorage.getItem(SESSAO_LIDER_LEGACY_FLAG) === 'true';
+        const usuarioLegado = JSON.parse(localStorage.getItem(SESSAO_LIDER_LEGACY_USER));
+
+        if (liderLegadoLogado && usuarioLegado && usuarioLegado.email) {
+            return salvarSessao(usuarioLegado);
+        }
+    } catch (erro) {
+        console.warn('Sessao antiga invalida. Limpando dados locais.', erro);
+    }
+
+    localStorage.removeItem(SESSAO_LIDER_LEGACY_FLAG);
+    localStorage.removeItem(SESSAO_LIDER_LEGACY_USER);
+    return null;
+}
+
+function limparSessao() {
+    localStorage.removeItem(SESSAO_LIDER_KEY);
+    localStorage.removeItem(SESSAO_LIDER_LEGACY_FLAG);
+    localStorage.removeItem(SESSAO_LIDER_LEGACY_USER);
+}
+
+function obterUsuarioLogado() {
+    const sessao = obterSessao();
+    return sessao ? sessao.usuario : null;
+}
+
+function usuarioEstaLogado() {
+    return Boolean(obterUsuarioLogado());
+}
+
+function obterNomeUsuario(usuario) {
+    if (!usuario) return '';
+    return usuario.nome || usuario.name || usuario.email || 'Lider';
+}
+
+function atualizarInterfaceUsuario() {
+    const usuario = obterUsuarioLogado();
+    const loginBtn = document.getElementById('menuIcon');
+    const userSessionArea = document.getElementById('userSessionArea');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const loginModal = document.getElementById('loginModal');
+
+    if (usuario) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (userSessionArea) userSessionArea.style.display = 'flex';
+        if (userNameDisplay) userNameDisplay.textContent = obterNomeUsuario(usuario);
+        if (loginModal) loginModal.style.display = 'none';
+    } else {
+        if (loginBtn) loginBtn.style.display = 'flex';
+        if (userSessionArea) userSessionArea.style.display = 'none';
+        if (userNameDisplay) userNameDisplay.textContent = '';
+    }
+
+    const adminFormArea = document.getElementById('adminFormArea');
+    if (adminFormArea) {
+        adminFormArea.style.display = usuario ? 'block' : 'none';
+    }
+}
 
 // =============================
 // CARREGAR TURMAS DA API

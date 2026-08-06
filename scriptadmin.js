@@ -86,11 +86,7 @@ function verificarAutenticacao() {
         document.getElementById('adminUserName').innerText = currentUser.nome;
     }
     if (document.getElementById('adminUserRole')) {
-        document.getElementById('adminUserRole').innerText = currentUser.cargo === 'principal' ? 'Administrador Principal' : 'Administrador';
-    }
-
-    if (currentUser.cargo === 'principal' && document.getElementById('tabAdmins')) {
-        document.getElementById('tabAdmins').style.display = 'block';
+        document.getElementById('adminUserRole').innerText = 'Administrador Principal';
     }
 }
 
@@ -148,14 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // =============================
 
 window.switchAuthTab = (tab) => {
-    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-    document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+    const tabLogin = document.getElementById('tabLogin');
+    const loginForm = document.getElementById('loginForm');
+    const authMessage = document.getElementById('authMessage');
 
-    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
-    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
-    document.getElementById('recoverForm').style.display = tab === 'recover' ? 'block' : 'none';
-
-    document.getElementById('authMessage').style.display = 'none';
+    if (tabLogin) tabLogin.classList.toggle('active', tab === 'login');
+    if (loginForm) loginForm.style.display = 'block';
+    if (authMessage) authMessage.style.display = 'none';
 };
 
 function showAuthMessage(msg, type) {
@@ -197,75 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// LÓGICA DE REGISTRO
-document.addEventListener('DOMContentLoaded', () => {
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const nome = document.getElementById('regNome').value;
-            const email = document.getElementById('regEmail').value;
-            const emailConfirm = document.getElementById('regEmailConfirm').value;
-            const password = document.getElementById('regPassword').value;
-
-            if (email !== emailConfirm) {
-                return showAuthMessage('Os e-mails informados não coincidem.', 'error');
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, email, senha: password })
-                });
-
-                const data = await res.json();
-                if (res.ok) {
-                    showAuthMessage(data.message || 'Solicitação enviada! Aguarde aprovação.', 'success');
-                    registerForm.reset();
-                    setTimeout(() => switchAuthTab('login'), 3000);
-                } else {
-                    showAuthMessage(data.error || 'Erro ao cadastrar', 'error');
-                }
-            } catch (err) {
-                showAuthMessage('Erro de conexão com o servidor', 'error');
-            }
-        };
-    }
-});
-
-// LÓGICA DE RECUPERAÇÃO (PRINCIPAL)
-document.addEventListener('DOMContentLoaded', () => {
-    const recoverForm = document.getElementById('recoverForm');
-    if (recoverForm) {
-        recoverForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('recoverEmail').value;
-            const recoveryCode = document.getElementById('recoverCodeInput').value;
-            const novaSenha = document.getElementById('recoverNewPass').value;
-
-            try {
-                const res = await fetch(`${API_BASE}/auth/recover-principal`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, recoveryCode, novaSenha })
-                });
-
-                const data = await res.json();
-                if (res.ok) {
-                    alert('Senha redefinida com sucesso! Você já pode logar.');
-                    switchAuthTab('login');
-                    recoverForm.reset();
-                } else {
-                    showAuthMessage(data.error || 'Erro na recuperação', 'error');
-                }
-            } catch (err) {
-                showAuthMessage('Erro de conexão', 'error');
-            }
-        };
-    }
-});
-
 // NAVEGAÇÃO ENTRE ABAS
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
@@ -281,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tab === 'turmas') secId = 'secTurmas';
             else if (tab === 'geral') secId = 'secGeral';
             else if (tab === 'contatos') secId = 'secContatos';
-            else if (tab === 'admins') secId = 'secAdmins';
             else if (tab === 'conta') secId = 'secConta';
 
             const section = document.getElementById(secId);
@@ -301,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (tab === 'geral') carregarEventosGerais();
             if (tab === 'contatos') carregarContatosAdmin();
-            if (tab === 'admins') carregarAdministradores();
             if (tab === 'conta') carregarMinhaConta();
         };
     });
@@ -981,14 +905,22 @@ window.excluirContato = async (id) => {
 };
 
 // =============================
-// PLACEHOLDER
+// MINHA CONTA
 // =============================
-async function carregarAdministradores() {
-    console.log("Carregando administradores...");
-}
-
 async function carregarMinhaConta() {
-    console.log("Carregando dados da conta...");
+    if (!currentUser) return;
+
+    const nomeInput = document.getElementById('editNome');
+    const emailInput = document.getElementById('editEmail');
+    const messageBox = document.getElementById('accountMessage');
+
+    if (nomeInput) nomeInput.value = currentUser.nome || '';
+    if (emailInput) emailInput.value = currentUser.email || '';
+
+    if (messageBox) {
+        messageBox.style.display = 'none';
+        messageBox.innerText = '';
+    }
 }
 
 // =============================
@@ -1078,34 +1010,41 @@ document.getElementById("formEditPerfil").addEventListener("submit", async funct
 
     try {
 
-        const response = await fetch("/admin/atualizar-perfil", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome,
-                email,
-                senha
-            })
-        });
+        const usuarioLogado = JSON.parse(localStorage.getItem("ifpr_user_logged")) || currentUser;
+
+    const response = await fetch("/admin/atualizar-perfil", {
+    method: "PUT",
+    headers: {
+        "Content-Type": "application/json",
+        "x-usuario-email": usuarioLogado.email
+    },
+    body: JSON.stringify({
+        nome,
+        email,
+        senha
+    })
+});
 
         const data = await response.json();
 
         if(response.ok){
+            if (data.user) {
+                currentUser = data.user;
+                localStorage.setItem('ifpr_user_logged', JSON.stringify(currentUser));
+            }
 
             messageBox.style.display = "block";
-            messageBox.style.background = "#e6fffa";
+            messageBox.style.background = "#d1fae5";
             messageBox.style.color = "#065f46";
-            messageBox.innerText = "Dados atualizados com sucesso!";
+            messageBox.style.border = "1px solid #6ee7b7";
+            messageBox.style.padding = "15px";
+            messageBox.style.borderRadius = "10px";
 
-        } else {
+            messageBox.innerText = "✅ Dados atualizados com sucesso!";
 
-            messageBox.style.display = "block";
-            messageBox.style.background = "#ffe6e6";
-            messageBox.style.color = "#7f1d1d";
-            messageBox.innerText = data.erro || "Erro ao atualizar.";
-
+            setTimeout(() => {
+                messageBox.style.display = "none";
+            }, 4000);
         }
 
     } catch (error){
@@ -1115,5 +1054,64 @@ document.getElementById("formEditPerfil").addEventListener("submit", async funct
         messageBox.style.color = "#7f1d1d";
         messageBox.innerText = "Erro de conexão com o servidor.";
 
+    }
+});
+
+document.getElementById("formEditSenha")?.addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const senhaAtual = document.getElementById("passAtual").value;
+    const novaSenha = document.getElementById("passNova").value;
+    const confirmaSenha = document.getElementById("passConfirma").value;
+    const messageBox = document.getElementById("accountMessage");
+
+    if (novaSenha !== confirmaSenha) {
+        messageBox.style.display = "block";
+        messageBox.style.background = "#ffe6e6";
+        messageBox.style.color = "#7f1d1d";
+        messageBox.innerText = "A confirmação da nova senha não corresponde.";
+        return;
+    }
+
+    if (novaSenha.length < 4) {
+        messageBox.style.display = "block";
+        messageBox.style.background = "#ffe6e6";
+        messageBox.style.color = "#7f1d1d";
+        messageBox.innerText = "A nova senha deve ter pelo menos 4 caracteres.";
+        return;
+    }
+
+    try {
+        const response = await fetch("/admin/alterar-senha", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "x-usuario-email": currentUser?.email || ''
+            },
+            body: JSON.stringify({
+                senhaAtual,
+                novaSenha
+            })
+        });
+
+        const data = await response.json();
+
+        if(response.ok){
+            messageBox.style.display = "block";
+            messageBox.style.background = "#e6fffa";
+            messageBox.style.color = "#065f46";
+            messageBox.innerText = data.message || "Senha atualizada com sucesso.";
+            document.getElementById("formEditSenha").reset();
+        } else {
+            messageBox.style.display = "block";
+            messageBox.style.background = "#ffe6e6";
+            messageBox.style.color = "#7f1d1d";
+            messageBox.innerText = data.error || data.erro || "Erro ao atualizar senha.";
+        }
+    } catch (error) {
+        messageBox.style.display = "block";
+        messageBox.style.background = "#ffe6e6";
+        messageBox.style.color = "#7f1d1d";
+        messageBox.innerText = "Erro de conexão com o servidor.";
     }
 });

@@ -642,7 +642,6 @@ main#mainContent {
             <li id="adminStatus">
                 <div class="user-card">
                     <p>Olá, <strong id="userNameDisplay">Administrador</strong></p>
-                    <button id="btnAlterarSenha" class="btn-sidebar">🔑 Alterar Senha</button>
                     <button class="btn-sidebar btn-logout btn-logout-action">🚪 Sair da conta</button>
                 </div>
             </li>
@@ -728,37 +727,6 @@ main#mainContent {
                         <input type="password" id="loginPassword" required placeholder="••••••••">
                     </div>
                     <button type="submit" class="btn-auth">Entrar no Painel</button>
-                    <p style="text-align: center; margin-top: 15px;">
-                        <a href="#" onclick="switchAuthTab('recover')"
-                            style="font-size: 0.85rem; color: var(--primary); text-decoration: none;">Esqueci minha
-                            senha</a>
-                    </p>
-                </form>
-
-                <!-- Formulário de Recuperação (Principal) -->
-                <form id="recoverForm" class="auth-form" style="display: none;">
-                    <h3 style="margin-bottom: 10px; color: var(--primary);">Recuperação de Conta</h3>
-                    <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px;">
-                        Apenas para o Administrador Principal. Use seu código master.
-                    </p>
-                    <div class="input-group">
-                        <label>E-mail do Principal:</label>
-                        <input type="email" id="recoverEmail" required placeholder="seu@email.com">
-                    </div>
-                    <div class="input-group">
-                        <label>Código de Recuperação Master:</label>
-                        <input type="text" id="recoverCodeInput" required placeholder="RECXXX">
-                    </div>
-                    <div class="input-group">
-                        <label>Nova Senha:</label>
-                        <input type="password" id="recoverNewPass" required minlength="4" placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn-auth">Redefinir Senha</button>
-                    <p style="text-align: center; margin-top: 15px;">
-                        <a href="#" onclick="switchAuthTab('login')"
-                            style="font-size: 0.85rem; color: var(--text-main); text-decoration: none;">← Voltar ao
-                            Login</a>
-                    </p>
                 </form>
 
             </div>
@@ -844,6 +812,7 @@ main#mainContent {
 
 
         <form id="formEditPerfil">
+            
 
             <div class="input-group">
                 <label for="editNome">
@@ -898,7 +867,7 @@ main#mainContent {
                 Salvar alterações
 
             </button>
-
+            <div id="accountMessage" class="message-box"></div>
 
         </form>
 
@@ -1093,49 +1062,7 @@ main#mainContent {
         </div>
     </div>
 
-    <div id="changeAdminPassModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🔑 Alterar Senha de Administrador</h3>
-                <button class="close-modal-btn"
-                    onclick="document.getElementById('changeAdminPassModal').style.display='none'">&times;</button>
-            </div>
-            <form id="formChangeAdminPass">
-                <input type="hidden" id="changePassAdminId">
-                <p style="font-size: 0.9rem; margin-bottom: 15px; opacity: 0.8;">
-                    Defina uma nova senha para: <strong id="changePassAdminNome">...</strong>
-                </p>
-                <div class="input-group">
-                    <label>Nova Senha:</label>
-                    <input type="password" id="adminNovaSenha" required minlength="4" placeholder="Mínimo 4 caracteres">
-                </div>
-                <button type="submit" class="btn-save" style="width: 100%; margin-top: 10px;">Confirmar Mudança</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tela Auxiliar: Sobre o Projeto (Oculta) -->
-
-    <!-- Rodapé Institucional (Sincronizado) -->
-    <footer class="footer-ifpr">
-        <div class="footer-main">
-            <div class="footer-inner">
-                <div class="footer-col">
-                    <h4 class="footer-col-title">Agenda Acadêmica Digital</h4>
-                    <p class="footer-col-text">
-                        Sistema acadêmico desenvolvido para organização e acompanhamento de eventos escolares, provas,
-                        trabalhos e atividades do IFPR – Campus Assis Chateaubriand.
-                    </p>
-                </div>
-                <div class="footer-col">
-                    <h4 class="footer-col-title">Navegação</h4>
-                    <ul class="footer-nav">
-                        <li><a href="index.html">Início</a></li>
-                        <li><a href="index.html#turmasSelection">Turmas</a></li>
-                        <li><a href="#" onclick="switchAuthTab('login')">Fazer Login</a></li>
-                    </ul>
-                </div>
-                <div class="footer-col">
+    <           <div class="footer-col">
                     <h4 class="footer-col-title">Institucional</h4>
                     <ul class="footer-nav">
                         <li>IFPR – Campus Assis Chateaubriand</li>

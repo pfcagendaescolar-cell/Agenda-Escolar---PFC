@@ -3,10 +3,10 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const connectDB = require("./config/db");
-const Admin = require("./models/Admin");
 const Turma = require("./models/Turma");
 const Evento = require("./models/Evento");
 const Contato = require("./models/Contato");
+const Admin = require("./models/Admin");
 
 const app = express();
 
@@ -18,25 +18,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'frontend-vanilla')));
 
 // Definição dos Caminhos dos Arquivos JSON Restantes para Migração
-const ADMINS_FILE = path.join(__dirname, 'admins.json');
 const TURMAS_FILE = path.join(__dirname, 'turmas.json');
 const CONTATOS_FILE = path.join(__dirname, 'contatos.json');
 
 // =============================
 // FUNÇÕES AUXILIARES (I/O)
 // =============================
-
-const lerAdmins = () => {
-    try {
-        if (!fs.existsSync(ADMINS_FILE)) fs.writeFileSync(ADMINS_FILE, JSON.stringify([]));
-        return JSON.parse(fs.readFileSync(ADMINS_FILE, 'utf8'));
-    } catch (e) {
-        console.error("Erro ao ler admins.json:", e);
-        return [];
-    }
-};
-
-const salvarAdmins = (dados) => fs.writeFileSync(ADMINS_FILE, JSON.stringify(dados, null, 2));
 
 const lerContatos = () => {
     try {
@@ -150,17 +137,13 @@ app.post('/auth/login', async (req, res) => {
 
     if (adminUser) {
         console.log(`✅ Admin autenticado: ${adminUser.nome}`);
-        if (adminUser.status === 'pendente') {
-            return res.status(403).json({ error: "Aguardando aprovação do Administrador Principal." });
-        }
         return res.json({
             user: {
                 _id: adminUser._id,
                 nome: adminUser.nome,
                 email: adminUser.email,
-                cargo: adminUser.cargo || 'admin',
-                role: 'admin',
-                status: adminUser.status
+                cargo: 'principal',
+                role: 'admin'
             }
         });
     }
@@ -209,66 +192,31 @@ app.post('/auth/login', async (req, res) => {
     res.status(401).json({ error: "E-mail ou senha incorretos." });
 });
 
-app.post('/auth/register', (req, res) => {
-    const admins = lerAdmins();
-    const { nome, email, senha } = req.body;
-    const emailInput = (email || "").trim().toLowerCase();
+app.put('/admin/alterar-senha', async (req, res) => {
+    try {
+        console.log("=== ALTERANDO SENHA ===");
+        const { senhaAtual, novaSenha } = req.body;
+        const email = req.headers["x-usuario-email"];
+        console.log("EMAIL DO HEADER:", email);
 
-    if (admins.find(a => a.email.toLowerCase() === emailInput)) {
-        return res.status(400).json({ error: "E-mail já existe." });
+        const admin = await Admin.findOne({ email: email });
+        if (!admin) {
+            return res.status(404).json({ error: "Admin não encontrado." });
+        }
+
+        if (admin.password !== senhaAtual) {
+            return res.status(401).json({ error: "Senha atual incorreta." });
+        }
+
+        admin.password = novaSenha;
+        await admin.save();
+
+        console.log("Senha atualizada com sucesso!");
+        return res.json({ message: "Senha alterada com sucesso!" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Erro ao alterar senha." });
     }
-
-    const isFirst = admins.length === 0;
-    const novo = {
-        _id: Date.now().toString(),
-        nome,
-        email: emailInput,
-        password: (senha || "").trim(),
-        cargo: isFirst ? 'principal' : 'secundario',
-        status: isFirst ? 'ativo' : 'pendente'
-    };
-
-    admins.push(novo);
-    salvarAdmins(admins);
-    res.status(201).json({ message: "OK", user: novo });
-});
-
-app.put('/auth/perfil', (req, res) => {
-    const { adminId, nome, email, senhaAtual } = req.body;
-    const adms = lerAdmins();
-    const idx = adms.findIndex(a => a._id === adminId);
-
-    if (idx === -1) return res.status(404).json({ error: "Usuário não encontrado." });
-
-    if (adms[idx].password !== senhaAtual) {
-        return res.status(401).json({ error: "Senha atual incorreta." });
-    }
-
-    const emailLower = email.trim().toLowerCase();
-    const existe = adms.find(a => a.email.toLowerCase() === emailLower && a._id !== adminId);
-    if (existe) return res.status(400).json({ error: "E-mail já está em uso por outro administrador." });
-
-    adms[idx].nome = nome;
-    adms[idx].email = emailLower;
-
-    salvarAdmins(adms);
-    res.json({ message: "Perfil updated!" });
-});
-
-app.put('/auth/senha', (req, res) => {
-    const { adminId, senhaAtual, novaSenha } = req.body;
-    const adms = lerAdmins();
-    const idx = adms.findIndex(a => a._id === adminId);
-
-    if (idx === -1) return res.status(404).json({ error: "Usuário não encontrado." });
-
-    if (adms[idx].password !== senhaAtual) {
-        return res.status(401).json({ error: "Senha atual incorreta." });
-    }
-
-    adms[idx].password = novaSenha.trim();
-    salvarAdmins(adms);
-    res.json({ message: "Senha alterada!" });
 });
 
 app.put('/auth/lider/senha', async (req, res) => {
@@ -294,44 +242,6 @@ app.put('/auth/lider/senha', async (req, res) => {
 
     await t.save();
     return res.json({ message: "Senha alterada com sucesso!" });
-});
-
-app.put('/auth/admins/reset-password/:id', (req, res) => {
-    const { novaSenha } = req.body;
-    if (!novaSenha || novaSenha.trim().length < 4) {
-        return res.status(400).json({ error: "Nova senha deve ter pelo menos 4 caracteres." });
-    }
-
-    const adms = lerAdmins();
-    const idx = adms.findIndex(a => a._id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: "Admin não encontrado." });
-
-    adms[idx].password = novaSenha.trim();
-    salvarAdmins(adms);
-    res.json({ message: "Senha alterada com sucesso!" });
-});
-
-app.post('/auth/recover-principal', (req, res) => {
-    const { email, recoveryCode, novaSenha } = req.body;
-    const adms = lerAdmins();
-    const idx = adms.findIndex(a => a.email.toLowerCase() === email.trim().toLowerCase() && a.cargo === 'principal');
-
-    if (idx === -1) return res.status(404).json({ error: "Administrador Principal não encontrado." });
-
-    if (adms[idx].recoveryCode !== recoveryCode.trim()) {
-        return res.status(401).json({ error: "Código de recuperação inválido." });
-    }
-
-    adms[idx].password = novaSenha.trim();
-    salvarAdmins(adms);
-    res.json({ message: "Senha redefinida com sucesso!" });
-});
-
-app.get('/auth/recovery-info/:adminId', (req, res) => {
-    const adms = lerAdmins();
-    const user = adms.find(a => a._id === req.params.adminId);
-    if (!user || user.cargo !== 'principal') return res.status(403).json({ error: "Acesso negado." });
-    res.json({ recoveryCode: user.recoveryCode });
 });
 
 // =============================
@@ -497,31 +407,6 @@ app.delete("/contatos/:id", authMiddleware, async (req, res) => {
 });
 
 // =============================
-// ROTAS DE ADMINS (GERENCIAL)
-// =============================
-
-app.get('/admins', (req, res) => res.json(lerAdmins().map(({ password, recoveryCode, ...rest }) => rest)));
-
-app.put('/admins/aprovar/:id', (req, res) => {
-    const adms = lerAdmins();
-    const i = adms.findIndex(a => a._id === req.params.id);
-    if (i !== -1) { 
-        adms[i].status = 'ativo'; 
-        salvarAdmins(adms); 
-        res.json(adms[i]); 
-    } else {
-        res.status(404).json({ error: "N/A" });
-    }
-});
-
-app.delete('/admins/:id', (req, res) => {
-    const adms = lerAdmins();
-    const novos = adms.filter(a => a._id !== req.params.id);
-    salvarAdmins(novos);
-    res.json({ ok: true });
-});
-
-// =============================
 // ROTAS DE TURMAS (100% MONGODB)
 // =============================
 
@@ -600,26 +485,6 @@ app.post('/debug/validar-headers', (req, res) => {
     });
 });
 
-// Migrar admins json → MongoDB
-app.post("/migrar/admins", async (req, res) => {
-    try {
-        const dados = JSON.parse(fs.readFileSync(ADMINS_FILE, "utf8"));
-        let criados = 0;
-
-        for (const admin of dados) {
-            const existe = await Admin.findOne({ email: admin.email });
-            if (!existe) {
-                await Admin.create(admin);
-                criados++;
-            }
-        }
-        res.json({ message: "Migração concluída", criados });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Erro na migração" });
-    }
-});
-
 // Migrar turmas json → MongoDB
 app.post("/migrar/turmas", async (req, res) => {
     try {
@@ -645,17 +510,69 @@ app.post("/migrar/turmas", async (req, res) => {
         res.status(500).json({ error: "Erro na migração de turmas" });
     }
 });
-
 // =============================
 // INICIALIZAÇÃO DO SERVIDOR
 // =============================
 
 connectDB();
 
+app.put("/admin/atualizar-perfil", async (req, res) => {
+    try {
+        console.log("=== ATUALIZANDO PERFIL ===");
+        console.log(req.body);
+        console.log("EMAIL DO HEADER:", req.headers["x-usuario-email"]);
+
+        const { nome, email, senha } = req.body;
+        const emailAtual = req.headers["x-usuario-email"];
+
+        if (!emailAtual) {
+            return res.status(401).json({ erro: "Usuário não identificado." });
+        }
+
+        const admin = await Admin.findOne({ email: emailAtual });
+        if (!admin) {
+            return res.status(404).json({ erro: "Administrador não encontrado." });
+        }
+
+        if (admin.password !== senha) {
+            return res.status(401).json({ erro: "Senha atual incorreta." });
+        }
+
+        const emailExiste = await Admin.findOne({ email: email.toLowerCase() });
+        if (emailExiste && emailExiste._id.toString() !== admin._id.toString()) {
+            return res.status(400).json({ erro: "Esse email já está sendo utilizado." });
+        }
+
+        admin.nome = nome;
+        admin.email = email.toLowerCase();
+        await admin.save();
+
+        console.log("Perfil atualizado:", admin);
+
+        return res.json({
+            mensagem: "Dados atualizados com sucesso!",
+            user: {
+                _id: admin._id,
+                nome: admin.nome,
+                email: admin.email,
+                cargo: 'principal',
+                role: 'admin'
+            }
+        });
+    } catch(error) {
+        console.error(error);
+        return res.status(500).json({ erro: "Erro interno no servidor." });
+    }
+});
+
+
+// ✅ SERVIDOR (separado)
 const PORT = 3000;
 const server = app.listen(PORT, () => {
+
     console.log(`--- SERVIDOR REPARADO NA PORTA ${PORT} ---`);
     console.log(`--- Acesso local: http://localhost:${PORT} ---`);
+
 }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
         console.error(`!!! ERRO: A porta ${PORT} já está em uso por outro programa. !!!`);

@@ -19,23 +19,12 @@ app.use(express.static(path.join(__dirname, '..', 'frontend-vanilla')));
 
 // Definição dos Caminhos dos Arquivos JSON Restantes para Migração
 const TURMAS_FILE = path.join(__dirname, 'turmas.json');
-const CONTATOS_FILE = path.join(__dirname, 'contatos.json');
 
 // =============================
 // FUNÇÕES AUXILIARES (I/O)
 // =============================
 
-const lerContatos = () => {
-    try {
-        if (!fs.existsSync(CONTATOS_FILE)) fs.writeFileSync(CONTATOS_FILE, JSON.stringify([]));
-        return JSON.parse(fs.readFileSync(CONTATOS_FILE, 'utf8'));
-    } catch (e) {
-        console.error("Erro ao ler contatos.json:", e);
-        return [];
-    }
-};
-
-const salvarContatos = (dados) => fs.writeFileSync(CONTATOS_FILE, JSON.stringify(dados, null, 2));
+// (contatos agora são gerenciados via MongoDB)
 
 // =============================
 // MIDDLEWARE DE AUTORIZAÇÃO
@@ -362,8 +351,8 @@ app.post("/contatos", authMiddleware, async (req, res) => {
   }
 });
 
-app.get('/contatos', authMiddleware, async (req, res) => {
-  try {
+app.get('/contatos', async (req,res)=>{
+    try {
     const contatos = await Contato.find();
     res.json(contatos);
   } catch (err) {

@@ -302,63 +302,6 @@ function verificarRecesso(dataChave) {
 // INICIALIZAÇÃO
 // =============================
 
-function inicializarContatosExemplo() {
-    const contatosExistentes = localStorage.getItem('ifpr_contatos_v1');
-    if (!contatosExistentes || contatosExistentes === '[]') {
-        const contatosExemplo = [
-            {
-                "_id": "1",
-                "nome": "Coordenação de Ensino",
-                "setor": "Coordenação",
-                "descricao": "Responsável pela organização acadêmica, calendário escolar e políticas educacionais do campus",
-                "email": "coordenacao@ifpr.edu.br",
-                "telefone": "(44) 3232-1234"
-            },
-            {
-                "_id": "2",
-                "nome": "Secretaria Acadêmica",
-                "setor": "Secretaria",
-                "descricao": "Serviço de registros acadêmicos, documentação de alunos e históricos escolares",
-                "email": "secretaria@ifpr.edu.br",
-                "telefone": "(44) 3232-1235"
-            },
-            {
-                "_id": "3",
-                "nome": "Direção do Campus",
-                "setor": "Administração",
-                "descricao": "Direção geral do IFPR Campus Assis Chateaubriand, responsável pela gestão institucional",
-                "email": "direcao@ifpr.edu.br",
-                "telefone": "(44) 3232-1200"
-            },
-            {
-                "_id": "4",
-                "nome": "Assistência Estudantil",
-                "setor": "Assistência Social",
-                "descricao": "Apoio social, bolsas, benefícios e auxílios para estudantes carentes",
-                "email": "assistencia@ifpr.edu.br",
-                "telefone": "(44) 3232-1240"
-            },
-            {
-                "_id": "5",
-                "nome": "Orientação Educacional",
-                "setor": "Pedagogia",
-                "descricao": "Apoio pedagógico, orientação de estudos e acompanhamento de desempenho acadêmico",
-                "email": "orientacao@ifpr.edu.br",
-                "telefone": "(44) 3232-1250"
-            },
-            {
-                "_id": "6",
-                "nome": "Projeto de Desenvolvimento",
-                "setor": "PFC - Agenda Acadêmica",
-                "descricao": "Suporte técnico e dúvidas sobre a plataforma Agenda Acadêmica Digital",
-                "email": "projeto.ifpr.assis@gmail.com",
-                "telefone": ""
-            }
-        ];
-        localStorage.setItem('ifpr_contatos_v1', JSON.stringify(contatosExemplo));
-    }
-}
-
 async function inicializar() {
     await carregarTurmasDoServidor();  
     await carregarFeriadosNacionais(dataAtualDeVisualizacao.getFullYear());
@@ -367,7 +310,6 @@ async function inicializar() {
     atualizarInterfaceUsuario(); 
     configurarEventosInterface();
     verificarEstadoInicial();
-    inicializarContatosExemplo();
 }
 
 function verificarEstadoInicial() {
@@ -1026,21 +968,24 @@ async function carregarContatosPublico() {
         const response = await fetch(`${API_BASE}/contatos`);
 
         if (!response.ok) {
-            throw new Error('Erro ao buscar contatos do servidor');
+            throw new Error(`Erro ao buscar contatos do servidor: ${response.status}`);
         }
 
         const contatos = await response.json();
+
+        console.log("Contatos carregados da API:", contatos);
+
         renderizarContatosPublico(contatos);
 
     } catch (err) {
+
         console.error("Erro ao carregar contatos:", err);
 
-        try {
-            const contatosLocal = JSON.parse(localStorage.getItem('ifpr_contatos_v1')) || [];
-            renderizarContatosPublico(contatosLocal);
-        } catch (e) {
-            container.innerHTML = '<div class="contacts-empty">Nenhum contato disponível no momento.</div>';
-        }
+        container.innerHTML = `
+            <div class="contacts-empty">
+                Não foi possível carregar os contatos no momento.
+            </div>
+        `;
     }
 }
 

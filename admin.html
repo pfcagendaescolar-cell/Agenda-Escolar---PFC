@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
-    <!-- <style>
+    <style>
         /* Estilos específicos para a tela de login integrada no admin.html */
        
         /* AJUSTE GLOBAL DE ESTRUTURA 
@@ -622,14 +622,13 @@ main#mainContent {
             background: #d97706;
             transform: translateY(-1px);
         }
-    </style> -->
+    </style>
 </head>
 
 <body>
 
     <div id="menuOverlay" class="menu-overlay"></div>
 
-    <!-- Menu Lateral (Sidebar) -->
     <nav id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <h3>Configurações <span style="font-size: 1.1rem; margin-left: 5px;">⚙️</span></h3>
@@ -663,16 +662,13 @@ main#mainContent {
         </ul>
     </nav>
 
-    <!-- Cabeçalho Institucional (Sincronizado) -->
     <header class="header-ifpr">
-        <!-- Faixa 1: Barra superior azul escura (gov.br) -->
         <div class="header-top-bar">
             <div class="header-top-inner">
                 <span class="top-bar-left">INSTITUTO FEDERAL DO PARANÁ</span>
                 <span class="top-bar-right">CAMPUS ASSIS CHATEAUBRIAND</span>
             </div>
         </div>
-        <!-- Faixa 2: Faixa branca com logo e títulos -->
         <div class="header-brand-bar">
             <div class="header-brand-inner">
                 <div class="header-logo"><img src="imagens/logoif.png"></div>
@@ -702,9 +698,6 @@ main#mainContent {
 
     <main id="mainContent">
 
-        <!-- ═══════════════════════════════════════════
-             SEÇÃO DE LOGIN (Integrada no admin.html)
-             ═══════════════════════════════════════════ -->
         <section id="adminLoginSection" class="auth-container">
             <div class="auth-card">
                 <h2 class="auth-title">Acesso Restrito</h2>
@@ -716,7 +709,6 @@ main#mainContent {
                     <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
                 </div>
 
-                <!-- Formulário de Login -->
                 <form id="loginForm" class="auth-form active">
                     <div class="input-group">
                         <label>E-mail:</label>
@@ -732,12 +724,8 @@ main#mainContent {
             </div>
         </section>
 
-        <!-- ═══════════════════════════════════════════
-             SEÇÃO DO DASHBOARD ADMIN
-             ═══════════════════════════════════════════ -->
         <div id="adminDashboardSection" class="admin-container" style="display: none;">
 
-            <!-- Navegação por Abas (Mobile First) -->
             <nav class="admin-tabs-nav">
                 <button class="admin-tab-btn active" data-tab="turmas">
                     <span>📋</span> Turma
@@ -753,7 +741,6 @@ main#mainContent {
                 </button>
             </nav>
 
-            <!-- Seção 1: Gerenciar Turmas -->
             <section id="secTurmas" class="admin-section active">
                 <div id="subListaTurmas">
                     <button id="btnNovaTurma" class="btn-new-turma">+ Criar Nova Turma</button>
@@ -771,7 +758,6 @@ main#mainContent {
                 </div>
             </section>
 
-            <!-- Seção 2: Agenda Geral -->
             <section id="secGeral" class="admin-section">
                 <div class="admin-card">
                     <h2 class="admin-card-title">🏛️ Agenda Geral Institucional</h2>
@@ -783,197 +769,90 @@ main#mainContent {
                 <div id="eventosListaGeral"></div>
             </section>
 
-                <!-- Seção 3: Contatos -->
-                <section id="secContatos" class="admin-section">
-                    <div class="admin-card">
-                        <h2 class="admin-card-title">📞 Contatos Institucionais</h2>
-                        <button id="btnNovoContato" class="btn-novo-evento">+ Novo Contato</button>
-                    </div>
+            <section id="secContatos" class="admin-section">
+                <div class="admin-card">
+                    <h2 class="admin-card-title">📞 Contatos Institucionais</h2>
+                    <p style="font-size:0.85rem; opacity:0.8; margin-bottom:20px;">
+                        Gerencie os contatos e setores disponíveis para os alunos.
+                    </p>
+                    <button id="btnNovoContato" class="btn-new-turma">+ Novo Contato</button>
+                </div>
+                <div id="contatosListaAdmin"></div>
+            </section>
+
+            <section id="secConta" class="admin-section">
+
+                <div class="admin-card">
+
+                    <h2 class="admin-card-title">
+                        👤 Editar Dados Pessoais
+                    </h2>
+
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
+                        Atualize seu nome e e-mail de acesso ao painel administrativo.
+                    </p>
+
+                    <form id="formEditPerfil">
+                        <div class="input-group">
+                            <label for="editNome">Nome:</label>
+                            <input type="text" id="editNome" placeholder="Digite seu nome" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="editEmail">E-mail:</label>
+                            <input type="email" id="editEmail" placeholder="Digite seu e-mail" required>
+                        </div>
+
+                        <div class="input-group"
+                            style="background: rgba(var(--primary-rgb), 0.05); padding: 15px; border-radius: 10px;">
+                            <label for="editPassConfirm">🔒 Confirmar senha atual:</label>
+                            <input type="password" id="editPassConfirm" placeholder="Digite sua senha atual para confirmar" required>
+                        </div>
+
+                        <button type="submit" class="btn-save" style="width: 100%; margin-top: 15px;">
+                            Salvar alterações
+                        </button>
+                    </form>
+                </div>
+
+                <div class="admin-card">
+                    <h2 class="admin-card-title">
+                        🔐 Alterar Senha
+                    </h2>
+
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
+                        Altere sua senha de acesso ao painel administrativo.
+                    </p>
+
+                    <form id="formEditSenha">
+                        <div class="input-group">
+                            <label for="passAtual">Senha atual:</label>
+                            <input type="password" id="passAtual" placeholder="Digite sua senha atual" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="passNova">Nova senha:</label>
+                            <input type="password" id="passNova" placeholder="Digite a nova senha" minlength="4" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="passConfirma">Confirmar nova senha:</label>
+                            <input type="password" id="passConfirma" placeholder="Repita a nova senha" required>
+                        </div>
+
+                        <button type="submit" class="btn-save" style="width: 100%; margin-top: 15px;">
+                            Atualizar Senha
+                        </button>
+                    </form>
+                </div>
+
+                <div id="accountMessage" class="message-box" style="display:none; margin-top:20px;"></div>
+
+            </section>
+
+        </div>
+    </main>
 
-                    <!-- 🔥 ID CORRIGIDO AQUI -->
-                    <div id="contatosListaAdmin"></div>
-                </section>
-
-
-
-            <!-- Seção 6: Minha Conta -->
-<section id="secConta" class="admin-section">
-
-    <!-- Editar dados pessoais -->
-    <div class="admin-card">
-
-        <h2 class="admin-card-title">
-            👤 Editar Dados Pessoais
-        </h2>
-
-        <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
-            Atualize seu nome e e-mail de acesso ao painel administrativo.
-        </p>
-
-
-        <form id="formEditPerfil">
-            
-
-            <div class="input-group">
-                <label for="editNome">
-                    Nome:
-                </label>
-
-                <input 
-                    type="text" 
-                    id="editNome"
-                    placeholder="Digite seu nome"
-                    required>
-            </div>
-
-
-
-            <div class="input-group">
-                <label for="editEmail">
-                    E-mail:
-                </label>
-
-                <input 
-                    type="email" 
-                    id="editEmail"
-                    placeholder="Digite seu e-mail"
-                    required>
-            </div>
-
-
-
-            <div class="input-group"
-                style="background: rgba(var(--primary-rgb), 0.05); padding: 15px; border-radius: 10px;">
-
-                <label for="editPassConfirm">
-                    🔒 Confirmar senha atual:
-                </label>
-
-                <input 
-                    type="password"
-                    id="editPassConfirm"
-                    placeholder="Digite sua senha atual para confirmar"
-                    required>
-
-            </div>
-
-
-
-            <button 
-                type="submit"
-                class="btn-save"
-                style="width: 100%; margin-top: 15px;">
-
-                Salvar alterações
-
-            </button>
-            <div id="accountMessage" class="message-box"></div>
-
-        </form>
-
-    </div>
-
-
-
-
-    <!-- Alterar senha -->
-    <div class="admin-card">
-
-        <h2 class="admin-card-title">
-            🔐 Alterar Senha
-        </h2>
-
-
-        <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
-            Altere sua senha de acesso ao painel administrativo.
-        </p>
-
-
-
-        <form id="formEditSenha">
-
-
-            <div class="input-group">
-
-                <label for="passAtual">
-                    Senha atual:
-                </label>
-
-                <input 
-                    type="password"
-                    id="passAtual"
-                    placeholder="Digite sua senha atual"
-                    required>
-
-            </div>
-
-
-
-            <div class="input-group">
-
-                <label for="passNova">
-                    Nova senha:
-                </label>
-
-                <input 
-                    type="password"
-                    id="passNova"
-                    placeholder="Digite a nova senha"
-                    minlength="4"
-                    required>
-
-            </div>
-
-
-
-            <div class="input-group">
-
-                <label for="passConfirma">
-                    Confirmar nova senha:
-                </label>
-
-                <input 
-                    type="password"
-                    id="passConfirma"
-                    placeholder="Repita a nova senha"
-                    required>
-
-            </div>
-
-
-
-            <button 
-                type="submit"
-                class="btn-save"
-                style="width: 100%; margin-top: 15px;">
-
-                Atualizar Senha
-
-            </button>
-
-        </form>
-
-
-    </div>
-
-
-
-
-    <!-- Mensagem de retorno -->
-    <div 
-        id="accountMessage" 
-        class="message-box" 
-        style="display:none; margin-top:20px;">
-    </div>
-
-
-</section>
-
-</div>
-</main>
-
-    <!-- Modais (Mantidos conforme scriptadmin.js espera) -->
-    <!-- Modal para Visualizar Detalhes da Turma -->
     <div id="turmaViewModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
@@ -981,8 +860,7 @@ main#mainContent {
                 <button class="close-modal-btn" id="closeTurmaViewModal">&times;</button>
             </div>
             <div id="turmaViewContent" class="turma-view-details">
-                <!-- Preenchido via JS -->
-            </div>
+                </div>
             <div class="modal-footer-actions">
                 <button id="btnViewEdit" class="btn-edit">✏️ Editar Turma</button>
                 <button id="btnViewDelete" class="btn-delete">🗑️ Excluir Turma</button>
@@ -991,7 +869,6 @@ main#mainContent {
         </div>
     </div>
 
-    <!-- Modal de Cadastro / Edição de Turma (Restaurado) -->
     <div id="turmaModal" class="modal">
         <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
             <div class="modal-header">
@@ -1062,34 +939,35 @@ main#mainContent {
         </div>
     </div>
 
-    <           <div class="footer-col">
-                    <h4 class="footer-col-title">Institucional</h4>
-                    <ul class="footer-nav">
-                        <li>IFPR – Campus Assis Chateaubriand</li>
-                        <li>
-                            <a href="https://ifpr.edu.br/" target="_blank" rel="noopener noreferrer">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                                    <polyline points="15 3 21 3 21 9" />
-                                    <line x1="10" y1="14" x2="21" y2="3" />
-                                </svg>
-                                Site Oficial IFPR
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://www.instagram.com/ifpr.assis/" target="_blank" rel="noopener noreferrer">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
-                                    fill="currentColor" aria-hidden="true">
-                                    <path
-                                        d="M12 2.163c3.204 0 3.584.012 4.85.07 1.17.054 1.97.24 2.43.403a4.92 4.92 0 011.675 1.09 4.92 4.92 0 011.09 1.675c.163.46.35 1.26.403 2.43.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.054 1.17-.24 1.97-.403 2.43a4.92 4.92 0 01-1.09 1.675 4.92 4.92 0 01-1.675 1.09c-.46.163-1.26.35-2.43.403-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.17-.054-1.97-.24-2.43-.403a4.92 4.92 0 01-1.675-1.09 4.92 4.92 0 01-1.09-1.675c-.163-.46-.35-1.26-.403-2.43C2.175 15.747 2.163 15.367 2.163 12s.012-3.584.07-4.85c.054-1.17.24-1.97.403-2.43a4.92 4.92 0 011.09-1.675 4.92 4.92 0 011.675-1.09c.46-.163 1.26-.35 2.43-.403C8.416 2.175 8.796 2.163 12 2.163zm0-2.163C8.741 0 8.332.014 7.052.072 5.775.13 4.9.333 4.14.63a7.07 7.07 0 00-2.563 1.67A7.07 7.07 0 00.63 4.86C.333 5.62.13 6.495.072 7.772.014 9.052 0 9.46 0 12c0 2.54.014 2.948.072 4.228.058 1.277.261 2.152.558 2.912a7.07 7.07 0 001.67 2.563 7.07 7.07 0 002.563 1.67c.76.297 1.635.5 2.912.558C9.052 23.986 9.46 24 12 24c2.54 0 2.948-.014 4.228-.072 1.277-.058 2.152-.261 2.912-.558a7.07 7.07 0 002.563-1.67 7.07 7.07 0 001.67-2.563c.297-.76.5-1.635.558-2.912C23.986 14.948 24 14.54 24 12c0-2.54-.014-2.948-.072-4.228-.058-1.277-.261-2.152-.558-2.912a7.07 7.07 0 00-1.67-2.563 7.07 7.07 0 00-2.563-1.67C18.38.333 17.505.13 16.228.072 14.948.014 14.54 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zm0 10.162a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                                </svg>
-                                Instagram IFPR Assis
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+    <footer class="footer-ifpr">
+        <div class="footer-content">
+            <div class="footer-col">
+                <h4 class="footer-col-title">Institucional</h4>
+                <ul class="footer-nav">
+                    <li>IFPR – Campus Assis Chateaubriand</li>
+                    <li>
+                        <a href="https://ifpr.edu.br/" target="_blank" rel="noopener noreferrer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                                <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            Site Oficial IFPR
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.instagram.com/ifpr.assis/" target="_blank" rel="noopener noreferrer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                                fill="currentColor" aria-hidden="true">
+                                <path
+                                    d="M12 2.163c3.204 0 3.584.012 4.85.07 1.17.054 1.97.24 2.43.403a4.92 4.92 0 011.675 1.09 4.92 4.92 0 011.09 1.675c.163.46.35 1.26.403 2.43.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.054 1.17-.24 1.97-.403 2.43a4.92 4.92 0 01-1.09 1.675 4.92 4.92 0 01-1.675 1.09c-.46.163-1.26.35-2.43.403-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.17-.054-1.97-.24-2.43-.403a4.92 4.92 0 01-1.675-1.09 4.92 4.92 0 01-1.09-1.675c-.163-.46-.35-1.26-.403-2.43C2.175 15.747 2.163 15.367 2.163 12s.012-3.584.07-4.85c.054-1.17.24-1.97.403-2.43a4.92 4.92 0 011.09-1.675 4.92 4.92 0 011.675-1.09c.46-.163 1.26-.35 2.43-.403C8.416 2.175 8.796 2.163 12 2.163zm0-2.163C8.741 0 8.332.014 7.052.072 5.775.13 4.9.333 4.14.63a7.07 7.07 0 00-2.563 1.67A7.07 7.07 0 00.63 4.86C.333 5.62.13 6.495.072 7.772.014 9.052 0 9.46 0 12c0 2.54.014 2.948.072 4.228.058 1.277.261 2.152.558 2.912a7.07 7.07 0 001.67 2.563 7.07 7.07 0 002.563 1.67c.76.297 1.635.5 2.912.558C9.052 23.986 9.46 24 12 24c2.54 0 2.948-.014 4.228-.072 1.277-.058 2.152-.261 2.912-.558a7.07 7.07 0 002.563-1.67 7.07 7.07 0 001.67-2.563c.297-.76.5-1.635.558-2.912C23.986 14.948 24 14.54 24 12c0-2.54-.014-2.948-.072-4.228-.058-1.277-.261-2.152-.558-2.912a7.07 7.07 0 00-1.67-2.563 7.07 7.07 0 00-2.563-1.67C18.38.333 17.505.13 16.228.072 14.948.014 14.54 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zm0 10.162a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                            </svg>
+                            Instagram IFPR Assis
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
         <div class="footer-bottom">

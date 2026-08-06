@@ -1067,3 +1067,53 @@ document.getElementById('contatoForm')?.addEventListener('submit', async (e) => 
     }
 });
 
+document.getElementById("formEditPerfil").addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const nome = document.getElementById("editNome").value;
+    const email = document.getElementById("editEmail").value;
+    const senha = document.getElementById("editPassConfirm").value;
+
+    const messageBox = document.getElementById("accountMessage");
+
+    try {
+
+        const response = await fetch("/admin/atualizar-perfil", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome,
+                email,
+                senha
+            })
+        });
+
+        const data = await response.json();
+
+        if(response.ok){
+
+            messageBox.style.display = "block";
+            messageBox.style.background = "#e6fffa";
+            messageBox.style.color = "#065f46";
+            messageBox.innerText = "Dados atualizados com sucesso!";
+
+        } else {
+
+            messageBox.style.display = "block";
+            messageBox.style.background = "#ffe6e6";
+            messageBox.style.color = "#7f1d1d";
+            messageBox.innerText = data.erro || "Erro ao atualizar.";
+
+        }
+
+    } catch (error){
+
+        messageBox.style.display = "block";
+        messageBox.style.background = "#ffe6e6";
+        messageBox.style.color = "#7f1d1d";
+        messageBox.innerText = "Erro de conexão com o servidor.";
+
+    }
+});

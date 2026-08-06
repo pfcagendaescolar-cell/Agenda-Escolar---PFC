@@ -40,12 +40,10 @@ function showNotification(message, type = 'info', duration = null) {
 
     container.appendChild(toast);
 
-    // Duração padrão por tipo
     if (duration === null) {
         duration = type === 'error' ? 5000 : 3000;
     }
 
-    // Auto-remove após duração
     if (duration > 0) {
         setTimeout(() => {
             toast.classList.add('removing');
@@ -54,7 +52,6 @@ function showNotification(message, type = 'info', duration = null) {
     }
 }
 
-// Aliases para facilitar uso
 function showSuccess(message, duration) {
     showNotification(message, 'success', duration);
 }
@@ -76,13 +73,46 @@ function showInfo(message, duration) {
 // =============================
 
 let dataAtualDeVisualizacao = new Date();
-let eventosCarregados = [];   // Eventos do servidor (turma + gerais)
+let eventosCarregados = [];   
 let feriadosNacionais = {};
 let turmaAtual = JSON.parse(localStorage.getItem('ifpr_selected_turma_v1')) || null;
-let turmasCadastradas = [];   // Turmas carregadas da API
+let turmasCadastradas = [];   
+let liderLogado = false;      
 
 // =============================
-// SESSAO DO LIDER
+// REGRA DE PERMISSÃO POR TURMA (NOVA)
+// =============================
+
+/**
+ * Verifica se o usuário atual possui permissão de edição/administração
+ * na turma que está atualmente aberta no calendário.
+ */
+function podeEditarTurma() {
+    const usuario = obterUsuarioLogado();
+    if (!usuario) return false;
+
+    const role = usuario.role || localStorage.getItem("usuarioRole");
+    
+    if (role === "admin") {
+        return true;
+    }
+
+    if (role === "lider" || role === "turma_admin") {
+        const turmaUsuario = String(usuario.turma || usuario.turmaId || localStorage.getItem("usuarioTurma") || '').trim();
+        const turmaAbertaId = turmaAtual ? String(turmaAtual.id || turmaAtual.nome || '').trim() : '';
+        const turmaAbertaNome = turmaAtual ? String(turmaAtual.nome || '').trim() : '';
+
+        // Compara tanto pelo ID quanto pelo Nome da turma aberta
+        if (turmaUsuario && (turmaUsuario === turmaAbertaId || turmaUsuario === turmaAbertaNome)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// =============================
+// SESSÃO DO LÍDER
 // =============================
 
 function salvarSessao(usuario) {
@@ -97,8 +127,6 @@ function salvarSessao(usuario) {
     };
 
     localStorage.setItem(SESSAO_LIDER_KEY, JSON.stringify(sessao));
-
-    // Remove chaves antigas para evitar estados contraditorios.
     localStorage.removeItem(SESSAO_LIDER_LEGACY_FLAG);
     localStorage.removeItem(SESSAO_LIDER_LEGACY_USER);
 
@@ -113,12 +141,11 @@ function obterSessao() {
             return sessaoSalva;
         }
     } catch (erro) {
-        console.warn('Sessao salva invalida. Limpando dados locais.', erro);
+        console.warn('Sessão salva inválida. Limpando dados locais.', erro);
         limparSessao();
         return null;
     }
 
-    // Compatibilidade com logins feitos antes da centralizacao da sessao.
     try {
         const liderLegadoLogado = localStorage.getItem(SESSAO_LIDER_LEGACY_FLAG) === 'true';
         const usuarioLegado = JSON.parse(localStorage.getItem(SESSAO_LIDER_LEGACY_USER));
@@ -127,7 +154,7 @@ function obterSessao() {
             return salvarSessao(usuarioLegado);
         }
     } catch (erro) {
-        console.warn('Sessao antiga invalida. Limpando dados locais.', erro);
+        console.warn('Sessão antiga inválida. Limpando dados locais.', erro);
     }
 
     localStorage.removeItem(SESSAO_LIDER_LEGACY_FLAG);
@@ -139,11 +166,32 @@ function limparSessao() {
     localStorage.removeItem(SESSAO_LIDER_KEY);
     localStorage.removeItem(SESSAO_LIDER_LEGACY_FLAG);
     localStorage.removeItem(SESSAO_LIDER_LEGACY_USER);
+    localStorage.removeItem('ifpr_user_logged');
+    localStorage.removeItem('usuarioRole');
+    localStorage.removeItem('usuarioTurma');
+    localStorage.removeItem('usuarioEmail');
 }
 
 function obterUsuarioLogado() {
     const sessao = obterSessao();
-    return sessao ? sessao.usuario : null;
+    if (sessao && sessao.usuario) return sessao.usuario;
+    
+    try {
+        const userLogged = JSON.parse(localStorage.getItem('ifpr_user_logged'));
+        if (userLogged && userLogged.email) return userLogged;
+    } catch (e) {}
+
+    const role = localStorage.getItem('usuarioRole');
+    const email = localStorage.getItem('usuarioEmail');
+    if (email) {
+        return {
+            email: email,
+            role: role || 'user',
+            turma: localStorage.getItem('usuarioTurma') || ''
+        };
+    }
+
+    return null;
 }
 
 function usuarioEstaLogado() {
@@ -152,30 +200,36 @@ function usuarioEstaLogado() {
 
 function obterNomeUsuario(usuario) {
     if (!usuario) return '';
-    return usuario.nome || usuario.name || usuario.email || 'Lider';
+    return usuario.nome || usuario.name || usuario.email || 'Líder';
 }
 
 function atualizarInterfaceUsuario() {
     const usuario = obterUsuarioLogado();
-    const loginBtn = document.getElementById('menuIcon');
-    const userSessionArea = document.getElementById('userSessionArea');
-    const userNameDisplay = document.getElementById('userNameDisplay');
-    const loginModal = document.getElementById('loginModal');
-
+    const menuIconText = document.getElementById('menuIconText');
+    
     if (usuario) {
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (userSessionArea) userSessionArea.style.display = 'flex';
-        if (userNameDisplay) userNameDisplay.textContent = obterNomeUsuario(usuario);
-        if (loginModal) loginModal.style.display = 'none';
+        if (menuIconText) menuIconText.textContent = 'Minha Conta';
+        
+        const nameEl = document.getElementById('loggedUserName');
+        const emailEl = document.getElementById('loggedUserEmail');
+        const turmaEl = document.getElementById('loggedUserTurma');
+        
+        if (nameEl) nameEl.textContent = obterNomeUsuario(usuario);
+        if (emailEl) emailEl.textContent = usuario.email || '--';
+        
+        if (turmaEl) {
+            const idTurmaLider = usuario.turma || usuario.turmaId || usuario._id;
+            const turma = turmasCadastradas.find(t => String(t.id) === String(idTurmaLider) || String(t.nome) === String(idTurmaLider));
+            turmaEl.textContent = turma ? turma.nome : (usuario.turma || 'Não definida');
+        }
     } else {
-        if (loginBtn) loginBtn.style.display = 'flex';
-        if (userSessionArea) userSessionArea.style.display = 'none';
-        if (userNameDisplay) userNameDisplay.textContent = '';
+        if (menuIconText) menuIconText.textContent = 'Login';
     }
 
     const adminFormArea = document.getElementById('adminFormArea');
     if (adminFormArea) {
-        adminFormArea.style.display = usuario ? 'block' : 'none';
+        // Exibe o painel de criação somente se o usuário tiver privilégios na turma aberta
+        adminFormArea.style.display = podeEditarTurma() ? 'block' : 'none';
     }
 }
 
@@ -248,7 +302,6 @@ function verificarRecesso(dataChave) {
 // INICIALIZAÇÃO
 // =============================
 
-// Inicializar contatos de exemplo no localStorage se vazio
 function inicializarContatosExemplo() {
     const contatosExistentes = localStorage.getItem('ifpr_contatos_v1');
     if (!contatosExistentes || contatosExistentes === '[]') {
@@ -307,9 +360,11 @@ function inicializarContatosExemplo() {
 }
 
 async function inicializar() {
-    await carregarTurmasDoServidor();  // ✅ Carregar turmas da API primeiro
+    await carregarTurmasDoServidor();  
     await carregarFeriadosNacionais(dataAtualDeVisualizacao.getFullYear());
     carregarConfiguracoesTema();
+    liderLogado = usuarioEstaLogado(); 
+    atualizarInterfaceUsuario(); 
     configurarEventosInterface();
     verificarEstadoInicial();
     inicializarContatosExemplo();
@@ -323,6 +378,13 @@ function verificarEstadoInicial() {
         turmasSelection.style.display = 'none';
         calendarApp.style.display = 'block';
         document.getElementById('turmaNomeDisplay').innerText = turmaAtual.nome;
+        
+        // Atualiza a visibilidade do painel administrativo ao alternar de turma
+        const adminFormArea = document.getElementById('adminFormArea');
+        if (adminFormArea) {
+            adminFormArea.style.display = podeEditarTurma() ? 'block' : 'none';
+        }
+
         carregarEExibirCalendario();
     } else {
         turmasSelection.style.display = 'block';
@@ -344,22 +406,15 @@ function renderizarTurmas() {
     }
 
     turmas.forEach(turma => {
-        // ✅ Mostrar TODAS as turmas para visualização
         const btn = document.createElement('button');
         btn.className = 'turma-card';
         btn.innerHTML = `${turma.nome} <br><small style="font-size: 0.8rem; font-weight: normal; opacity: 0.8;">${turma.curso || ''}</small>`;
-        
-        // ✅ Todos conseguem visualizar qualquer turma
-        // Restrições de edição estão no backend
         btn.onclick = () => selecionarTurma(turma);
-        
         turmasList.appendChild(btn);
     });
 }
 
 function selecionarTurma(turma) {
-    // ✅ Permite visualização de qualquer turma
-    // Restrições de modificação estão no backend (middleware validarAcessoTurma)
     turmaAtual = turma;
     localStorage.setItem('ifpr_selected_turma_v1', JSON.stringify(turma));
     verificarEstadoInicial();
@@ -409,7 +464,6 @@ async function carregarEventosDaAPI() {
     }
 }
 
-// Retorna eventos para uma data específica (já carregados em memória)
 function getEventosPorData(chaveData) {
     return eventosCarregados.filter(e => e.data === chaveData);
 }
@@ -424,7 +478,6 @@ async function carregarEExibirCalendario() {
 }
 
 function renderizarCalendario() {
-
     const grid = document.getElementById('calendarGrid');
     const displayMes = document.getElementById('monthDisplay');
     const displayAno = document.getElementById('yearDisplay');
@@ -446,7 +499,6 @@ function renderizarCalendario() {
     }
 
     for (let dia = 1; dia <= totalDiasNoMes; dia++) {
-
         const divDia = document.createElement('div');
         divDia.className = 'day';
         divDia.innerText = dia;
@@ -454,26 +506,22 @@ function renderizarCalendario() {
         const chaveData = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
         const diaSemana = new Date(ano, mes, dia).getDay();
 
-        // Fim de semana
         if (diaSemana === 0 || diaSemana === 6) {
             divDia.classList.add('day-off');
         }
 
-        // Recesso
         const nomeRecesso = verificarRecesso(chaveData);
         if (nomeRecesso) {
             divDia.classList.add('day-recesso');
             divDia.title = nomeRecesso;
         }
 
-        // Feriado
         if (feriadosNacionais[chaveData]) {
             const f = feriadosNacionais[chaveData];
             divDia.classList.add(f.type === "national" ? 'holiday-national' : 'holiday-state');
             divDia.title = `Feriado: ${f.name}`;
         }
 
-        // ── Estrutura interna do dia: número + bolinhas ──────────────────
         divDia.innerText = '';
 
         const numSpan = document.createElement('span');
@@ -481,19 +529,14 @@ function renderizarCalendario() {
         numSpan.textContent = dia;
         divDia.appendChild(numSpan);
 
-        // ── Indicadores visuais de eventos (bolinhas coloridas) ────────────
         const eventosDoDia = getEventosPorData(chaveData);
 
         if (eventosDoDia.length > 0) {
             const ORDEM = ['prova', 'trabalho', 'tarefa', 'evento'];
-
-            // ✅ CORREÇÃO: Usar 'categoria' em vez de 'tipo' para filtrar
-            // Tipos únicos presentes, ordenados por prioridade
             const tiposPresentes = ORDEM.filter(t =>
                 eventosDoDia.some(e => e.categoria === t)
             );
 
-            // Cria container de bolinhas abaixo do número
             const dotsWrapper = document.createElement('div');
             dotsWrapper.className = 'day-dots';
             tiposPresentes.forEach(tipo => {
@@ -515,7 +558,6 @@ function renderizarCalendario() {
 // =============================
 
 function abrirPopupDetalhes(chaveData) {
-
     document.getElementById('eventDate').value = chaveData;
     document.getElementById('modalDateTitle').innerText =
         chaveData.split('-').reverse().join('/');
@@ -543,21 +585,20 @@ function abrirPopupDetalhes(chaveData) {
 
     renderizarListaDeEventos(chaveData);
 
-    // EXIBIR OU OCULTAR FORMULÁRIO BASEADO NO LOGIN
     const adminFormArea = document.getElementById('adminFormArea');
     if (adminFormArea) {
-        adminFormArea.style.display = liderLogado ? 'block' : 'none';
+        // Exibe o painel de criação dentro do modal apenas se possuir permissão na turma aberta
+        adminFormArea.style.display = podeEditarTurma() ? 'block' : 'none';
     }
 
     document.getElementById('eventModal').style.display = "flex";
 }
 
 function renderizarListaDeEventos(chaveData) {
-
     const listaHtml = document.getElementById('eventsList');
     listaHtml.innerHTML = "";
 
-    const userLogged = JSON.parse(localStorage.getItem('ifpr_user_logged')) || {};
+    const userLogged = obterUsuarioLogado() || {};
     const eventosDoDia = getEventosPorData(chaveData);
 
     if (eventosDoDia.length === 0) {
@@ -565,24 +606,28 @@ function renderizarListaDeEventos(chaveData) {
     }
 
     eventosDoDia.forEach(ev => {
-
         const item = document.createElement('div');
         item.className = 'event-item';
-        // ✅ CORREÇÃO: Usar 'categoria' em vez de 'tipo' para a cor
         item.style.borderLeftColor = `var(--cat-${ev.categoria})`;
 
-        // Indica se é evento geral
         const badgeGeral = ev.tipo === 'geral'
             ? '<span style="font-size:0.65rem; background:var(--primary); color:white; padding:1px 6px; border-radius:8px; margin-left:6px;">GERAL</span>'
             : '';
 
-        // ✅ SEGURANÇA: Validar se o LÍDER pode editar este evento
-        // Líder só pode deletar eventos de sua própria turma
-        const podeEditar = liderLogado && (
-            (userLogged.role === 'admin') ||  // Admin sempre pode
-            (userLogged.role === 'turma_admin' && userLogged._id && ev.turmaId === userLogged._id) ||  // Líder só da sua turma
-            (ev.tipo === 'geral')  // Geral qualquer um pode
-        );
+        let podeEditar = false;
+        
+        // Validação estrita considerando a regra de turma atual aberta
+        if (podeEditarTurma()) {
+            if (userLogged.role === 'admin') {
+                podeEditar = true; 
+            } else {
+                const idTurmaLider = userLogged.turma || userLogged.turmaId || userLogged._id;
+                if (String(ev.turmaId) === String(idTurmaLider) && ev.tipo !== 'geral') {
+                    podeEditar = true;
+                }
+            }
+        }
+
         const btnRemover = podeEditar
             ? `<button onclick="removerAtividade('${ev._id}')">🗑️</button>` : '';
 
@@ -608,7 +653,6 @@ function renderizarListaDeEventos(chaveData) {
 // =============================
 
 async function mudarMesCalendar(direcao) {
-
     const anoAnterior = dataAtualDeVisualizacao.getFullYear();
     dataAtualDeVisualizacao.setMonth(dataAtualDeVisualizacao.getMonth() + direcao);
 
@@ -623,53 +667,47 @@ async function mudarMesCalendar(direcao) {
 // EVENTOS (CRUD VIA API)
 // =============================
 
-// ✅ NOVO: Helper para obter headers de autenticação
+/**
+ * Helper para injetar os headers de autenticação exigidos pelo middleware nas requisições de eventos.
+ */
 function obterHeadersAutenticacao() {
-    const userLogged = JSON.parse(localStorage.getItem('ifpr_user_logged')) || {};
-    const headers = {
-        'Content-Type': 'application/json'
+    const user = obterUsuarioLogado() || {};
+    
+    const role = user.role || localStorage.getItem("usuarioRole") || '';
+    const turma = user.turma || user.turmaId || localStorage.getItem("usuarioTurma") || '';
+    const email = user.email || localStorage.getItem("usuarioEmail") || '';
+
+    return {
+        'Content-Type': 'application/json',
+        'x-usuario-role': role,
+        'x-usuario-turma': String(turma),
+        'x-usuario-email': email
     };
-
-    // Se há usuário logado, adicionar informações de autorização
-    if (userLogged.email) {
-        headers['X-Usuario-Email'] = userLogged.email;
-        headers['X-Usuario-Role'] = userLogged.role || 'user';
-        
-        // Para líderes: passar a turmaId
-        if (userLogged.role === 'turma_admin' && userLogged._id) {
-            headers['X-Usuario-Turma'] = userLogged._id;
-        }
-    }
-
-    return headers;
 }
 
 window.removerAtividade = async (eventoId) => {
+    if (!podeEditarTurma()) {
+        showError('Acesso Negado: Você não possui permissão administrativa nesta turma.');
+        return;
+    }
+
     if (!confirm("Deseja apagar?")) return;
 
     try {
-        // ✅ SEGURANÇA: Validar antes de enviar requisição
-        const userLogged = JSON.parse(localStorage.getItem('ifpr_user_logged')) || {};
+        const userLogged = obterUsuarioLogado() || {};
         
-        // Se é líder, precisar buscaro evento para validar turma
-        if (userLogged.role === 'turma_admin' && userLogged._id) {
-            const eventos = await fetch(`${API_BASE}/eventos`).then(r => r.json());
-            const evento = eventos.find(e => e._id === eventoId);
+        if (userLogged.role === 'turma_admin' || userLogged.role === 'lider') {
+            const evento = eventosCarregados.find(e => e._id === eventoId);
             
             if (!evento) {
-                showError('Evento não encontrado.');
+                showError('Evento não encontrado no calendário.');
                 return;
             }
             
-            // Líder PODE deletar apenas eventos de sua turma ou gerais
-            if (evento.turmaId !== userLogged._id && evento.tipo !== 'geral') {
-                console.warn(`🚫 [SEGURANÇA] Líder tentou deletar evento de outra turma:`, {
-                    usuarioTurmaId: userLogged._id,
-                    eventoTurmaId: evento.turmaId,
-                    eventoId: eventoId,
-                    email: userLogged.email
-                });
-                showError('Acesso Negado: Você só pode deletar eventos de sua própria turma.');
+            const idTurmaLider = userLogged.turma || userLogged.turmaId || userLogged._id;
+            
+            if (String(evento.turmaId) !== String(idTurmaLider) || evento.tipo === 'geral') {
+                showError('Acesso Negado: Você só pode excluir eventos da sua própria turma.');
                 return;
             }
         }
@@ -686,11 +724,9 @@ window.removerAtividade = async (eventoId) => {
             throw new Error(erro.error || 'Erro ao deletar evento');
         }
 
-        // Recarrega eventos e atualiza calendário
         await carregarEventosDaAPI();
         renderizarCalendario();
 
-        // Atualiza modal se aberto
         const chave = document.getElementById('eventDate').value;
         if (chave) renderizarListaDeEventos(chave);
     } catch (err) {
@@ -700,40 +736,48 @@ window.removerAtividade = async (eventoId) => {
 };
 
 function configurarEventosInterface() {
-
-    // =============================
-    // MODAL DE LOGIN LÍDER (Novo Sistema)
-    // =============================
-    const loginBtn = document.getElementById('menuIcon'); // Botão da navbar
+    const loginBtn = document.getElementById('menuIcon'); 
     const loginModal = document.getElementById('loginModal');
-    const closeBtn = document.getElementById('closeLoginModal');
+    const closeLoginBtn = document.getElementById('closeLoginModal');
+    
+    const userInfoModal = document.getElementById('userInfoModal');
+    const closeUserInfoBtn = document.getElementById('closeUserInfoModal');
 
-    // Abre o modal ao clicar no Login da Navbar
-    if (loginBtn && loginModal && closeBtn) {
+    if (loginBtn) {
         loginBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            loginModal.style.display = 'flex';
-        });
-
-        // Fecha ao clicar no X
-        closeBtn.addEventListener('click', () => {
-            loginModal.style.display = 'none';
-        });
-
-        // Fecha ao clicar fora do card (no overlay)
-        window.addEventListener('click', (e) => {
-            if (e.target === loginModal) {
-                loginModal.style.display = 'none';
+            if (usuarioEstaLogado()) {
+                atualizarInterfaceUsuario(); 
+                if (userInfoModal) userInfoModal.style.display = 'flex';
+            } else {
+                if (loginModal) loginModal.style.display = 'flex';
             }
         });
     }
 
-    // =============================
-    // LOGIN LÍDER - FORM (Novo Sistema)
-    // =============================
+    if (closeLoginBtn) {
+        closeLoginBtn.addEventListener('click', () => {
+            if (loginModal) loginModal.style.display = 'none';
+        });
+    }
+    
+    if (closeUserInfoBtn) {
+        closeUserInfoBtn.addEventListener('click', () => {
+            if (userInfoModal) userInfoModal.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('click', (e) => {
+        if (e.target === loginModal) {
+            loginModal.style.display = 'none';
+        }
+        if (e.target === userInfoModal) {
+            userInfoModal.style.display = 'none';
+        }
+    });
+
     const sidebarLoginForm = document.getElementById('sidebarLoginForm');
 
-    // ✅ Handler para o formulário de login
     if (sidebarLoginForm) {
         sidebarLoginForm.onsubmit = async (e) => {
             e.preventDefault();
@@ -756,24 +800,22 @@ function configurarEventosInterface() {
                 const data = await res.json();
 
                 if (res.ok) {
-                    // ✅ Login bem-sucedido
                     liderLogado = true;
                     localStorage.setItem('ifpr_lider_logado', 'true');
                     localStorage.setItem('ifpr_user_logged', JSON.stringify(data.user));
 
-                    // Fechar o modal
+                    if (data.user.role) localStorage.setItem('usuarioRole', data.user.role);
+                    if (data.user.turma || data.user.turmaId) localStorage.setItem('usuarioTurma', data.user.turma || data.user.turmaId);
+                    if (data.user.email) localStorage.setItem('usuarioEmail', data.user.email);
+
                     if (loginModal) loginModal.style.display = 'none';
-
-                    // Limpar form
                     sidebarLoginForm.reset();
-
-                    // Recarregar calendário se uma turma estiver selecionada
+                    
+                    atualizarInterfaceUsuario();
                     if (turmaAtual) renderizarCalendario();
                     
                     showSuccess("Login realizado com sucesso!");
-
                 } else {
-                    // ❌ Falha no login
                     showError(data.error || "E-mail ou senha incorretos.");
                 }
             } catch (erro) {
@@ -783,16 +825,16 @@ function configurarEventosInterface() {
         };
     }
 
-    // ✅ LOGOUT
-    const btnLogout = document.getElementById('btnLogout');
-    if (btnLogout) {
-        btnLogout.onclick = () => {
+    const btnLogoutUser = document.getElementById('btnLogoutUser');
+    if (btnLogoutUser) {
+        btnLogoutUser.onclick = () => {
             if (confirm("Tem certeza que deseja sair?")) {
                 liderLogado = false;
-                localStorage.setItem('ifpr_lider_logado', 'false');
-                localStorage.removeItem('ifpr_user_logged');
+                limparSessao();
 
-                // Recarregar calendário
+                if (userInfoModal) userInfoModal.style.display = 'none';
+                atualizarInterfaceUsuario();
+
                 if (turmaAtual) renderizarCalendario();
                 
                 showSuccess("Logout realizado com sucesso!");
@@ -800,51 +842,6 @@ function configurarEventosInterface() {
         };
     }
 
-    // ✅ NOVO: Botão de alterar senha
-    const btnAlterarSenha = document.getElementById('btnAlterarSenha');
-    if (btnAlterarSenha) {
-        btnAlterarSenha.onclick = async () => {
-            const userLogged = JSON.parse(localStorage.getItem('ifpr_user_logged')) || {};
-            const senhaAtual = prompt("Digite sua senha atual:");
-            
-            if (senhaAtual === null) return;
-
-            const novaSenha = prompt("Digite a nova senha:");
-            if (novaSenha === null) return;
-
-            const novaSenhaConfirm = prompt("Confirme a nova senha:");
-            if (novaSenhaConfirm === null) return;
-
-            if (novaSenha !== novaSenhaConfirm) {
-                showError("As senhas não coincidem!");
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE}/auth/lider/senha`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: userLogged.email,
-                        senhaAtual,
-                        novaSenha
-                    })
-                });
-
-                const data = await res.json();
-                if (res.ok) {
-                    showSuccess("Senha alterada com sucesso!");
-                } else {
-                    showError(data.error || "Erro ao alterar senha.");
-                }
-            } catch (err) {
-                console.error(err);
-                showError("Erro de conexão com o servidor.");
-            }
-        };
-    }
-
-    // Tema
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
         themeToggle.onchange = (e) => {
@@ -869,26 +866,31 @@ function configurarEventosInterface() {
     document.querySelector('.close-modal-btn').onclick =
         () => document.getElementById('eventModal').style.display = "none";
 
-    // Submissão de novo evento pelo líder (modal no calendário)
     document.getElementById('eventForm').onsubmit = async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const chave = document.getElementById('eventDate').value;
-        const userLogged = JSON.parse(localStorage.getItem('ifpr_user_logged')) || {};
+        if (!podeEditarTurma()) {
+            showError('Acesso Negado: Você não possui permissão para criar eventos nesta turma.');
+            return false;
+        }
 
-        // ✅ SEGURANÇA: Validação RIGOROSA de turma para líderes
-        if (userLogged.role === 'turma_admin' && userLogged._id) {
-            // Líder PRECISA estar visualizando sua própria turma para criar evento
-            if (!turmaAtual || turmaAtual.id !== userLogged._id) {
-                console.warn(`🚫 [SEGURANÇA] Líder tentou criar evento fora de sua turma:`, {
-                    usuarioTurmaId: userLogged._id,
-                    turmaSelecionada: turmaAtual?.id,
-                    usuarioEmail: userLogged.email
-                });
-                showError('Acesso Negado: Você só pode criar eventos de sua própria turma.');
-                return false;
+        const chave = document.getElementById('eventDate').value;
+        const userLogged = obterUsuarioLogado() || {};
+
+        let idTurmaEvento = turmaAtual ? (turmaAtual.id || turmaAtual.nome) : null;
+
+        if (userLogged.role === 'turma_admin' || userLogged.role === 'lider') {
+            const idTurmaLider = userLogged.turma || userLogged.turmaId || userLogged._id;
+            if (idTurmaLider) {
+                // Garante que o ID da turma enviado no payload seja estritamente o do líder logado
+                idTurmaEvento = String(idTurmaLider); 
             }
+        }
+
+        if (!idTurmaEvento) {
+            showError('Erro: Nenhuma turma identificada.');
+            return false;
         }
 
         const novo = {
@@ -898,7 +900,7 @@ function configurarEventosInterface() {
             data: chave,
             hora: document.getElementById('time').value,
             descricao: document.getElementById('description').value,
-            turmaId: turmaAtual.id,
+            turmaId: idTurmaEvento,
             criadoPor: 'líder',
             usuarioId: userLogged.email || 'unknown'
         };
@@ -917,15 +919,13 @@ function configurarEventosInterface() {
                 throw new Error(erro.error || 'Erro ao salvar evento');
             }
 
-            // Fechar modal ANTES de atualizar (para evitar resets)
             document.getElementById('eventModal').style.display = "none";
 
-            // Agora atualizar o calendário
+            showSuccess('Atividade cadastrada com sucesso!');
             await carregarEventosDaAPI();
             renderizarListaDeEventos(chave);
             renderizarCalendario();
 
-            // Limpar formulário manualmente
             document.getElementById('title').value = '';
             document.getElementById('description').value = '';
             document.getElementById('time').value = '';
@@ -944,7 +944,6 @@ function configurarEventosInterface() {
 // TEMA
 // =============================
 
-
 function carregarConfiguracoesTema() {
     const t = localStorage.getItem('ifpr_tema') || 'light';
     document.documentElement.setAttribute('data-theme', t);
@@ -956,7 +955,7 @@ function carregarConfiguracoesTema() {
 }
 
 // =============================
-// NAVEGACAO entre TELAS
+// NAVEGAÇÃO ENTRE TELAS
 // =============================
 
 function navigateToAbout(event) {
@@ -964,17 +963,12 @@ function navigateToAbout(event) {
         event.preventDefault();
     }
 
-    // Esconder todas as seções
     document.getElementById('turmasSelection').style.display = 'none';
     document.getElementById('calendarApp').style.display = 'none';
     document.getElementById('contactsScreen').style.display = 'none';
-
-    // Mostrar Sobre
     document.getElementById('aboutScreen').style.display = 'block';
 
-    // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     fecharMenuMobileSeAberto();
 }
 
@@ -983,47 +977,31 @@ function navigateToHome(event) {
         event.preventDefault();
     }
 
-    // Ao ir para home (Seleção de Turmas), resetamos a turma atual
     turmaAtual = null;
     localStorage.removeItem('ifpr_selected_turma_v1');
 
-    // Esconder todas as seções
     document.getElementById('aboutScreen').style.display = 'none';
     document.getElementById('contactsScreen').style.display = 'none';
     document.getElementById('calendarApp').style.display = 'none';
-
-    // Mostrar Início (Seleção de Turmas)
     document.getElementById('turmasSelection').style.display = 'block';
 
-    // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     fecharMenuMobileSeAberto();
 }
-
-// =============================
-// NAVEGACAO PARA CONTATOS
-// =============================
 
 function navigateToContacts(event) {
     if (event) {
         event.preventDefault();
     }
 
-    // Esconder todas as seções
     document.getElementById('turmasSelection').style.display = 'none';
     document.getElementById('calendarApp').style.display = 'none';
     document.getElementById('aboutScreen').style.display = 'none';
-
-    // Mostrar Contatos
     document.getElementById('contactsScreen').style.display = 'block';
 
-    // Carregar contatos
     carregarContatosPublico();
 
-    // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     fecharMenuMobileSeAberto();
 }
 
@@ -1039,14 +1017,12 @@ function fecharMenuMobileSeAberto() {
     }
 }
 
-// Carregar e exibir contatos publicamente
 async function carregarContatosPublico() {
     const container = document.getElementById('contactsContainer');
 
     if (!container) return;
 
     try {
-        // Tentar carregar do servidor primeiro
         const response = await fetch(`${API_BASE}/contatos`);
 
         if (!response.ok) {
@@ -1059,7 +1035,6 @@ async function carregarContatosPublico() {
     } catch (err) {
         console.error("Erro ao carregar contatos:", err);
 
-        // Fallback para localStorage
         try {
             const contatosLocal = JSON.parse(localStorage.getItem('ifpr_contatos_v1')) || [];
             renderizarContatosPublico(contatosLocal);
@@ -1069,7 +1044,6 @@ async function carregarContatosPublico() {
     }
 }
 
-// Renderizar contatos publicamente
 function renderizarContatosPublico(contatos) {
     const container = document.getElementById('contactsContainer');
 

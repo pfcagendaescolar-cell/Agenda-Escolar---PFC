@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <style>
+    <link rel="stylesheet" href="admin.css">
+    <!-- <style>
         /* Estilos específicos para a tela de login integrada no admin.html */
        
         /* AJUSTE GLOBAL DE ESTRUTURA 
@@ -621,7 +622,7 @@ main#mainContent {
             background: #d97706;
             transform: translateY(-1px);
         }
-    </style>
+    </style> -->
 </head>
 
 <body>
@@ -714,7 +715,6 @@ main#mainContent {
 
                 <div class="auth-tabs">
                     <button id="tabLogin" class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
-                    <button id="tabRegister" class="auth-tab" onclick="switchAuthTab('register')">Criar Conta</button>
                 </div>
 
                 <!-- Formulário de Login -->
@@ -761,30 +761,6 @@ main#mainContent {
                     </p>
                 </form>
 
-                <!-- Formulário de Registro -->
-                <form id="registerForm" class="auth-form">
-                    <div class="input-group">
-                        <label>Nome Completo:</label>
-                        <input type="text" id="regNome" required placeholder="Seu Nome">
-                    </div>
-                    <div class="input-group">
-                        <label>E-mail Institucional:</label>
-                        <input type="email" id="regEmail" required placeholder="seu@email.com">
-                    </div>
-                    <div class="input-group">
-                        <label>Confirmar E-mail:</label>
-                        <input type="email" id="regEmailConfirm" required placeholder="Repita seu e-mail">
-                    </div>
-                    <div class="input-group">
-                        <label>Escolha uma Senha:</label>
-                        <input type="password" id="regPassword" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn-auth">Solicitar Cadastro</button>
-                    <p style="font-size: 0.75rem; color: #64748b; margin-top: 15px; text-align: center;">
-                        * Novos cadastros requerem aprovação do administrador principal. O primeiro cadastro será o
-                        principal.
-                    </p>
-                </form>
             </div>
         </section>
 
@@ -803,9 +779,6 @@ main#mainContent {
                 </button>
                 <button class="admin-tab-btn" data-tab="contatos">
                     <span>📞</span> Contatos
-                </button>
-                <button class="admin-tab-btn" data-tab="admins" id="tabAdmins" style="display:none;">
-                    <span>🔑</span> Admin
                 </button>
                 <button class="admin-tab-btn" data-tab="conta" id="tabConta">
                     <span>👤</span> Minha Conta
@@ -856,82 +829,179 @@ main#mainContent {
 
 
             <!-- Seção 6: Minha Conta -->
-            <section id="secConta" class="admin-section">
-                <div class="admin-card">
-                    <h2 class="admin-card-title">👤 Informações da Conta</h2>
-                    <div id="currUserInfo" style="line-height: 1.8; font-size: 0.95rem;">
-                        <p><strong>Nome:</strong> <span id="infoNome">...</span></p>
-                        <p><strong>E-mail:</strong> <span id="infoEmail">...</span></p>
-                        <p><strong>Cargo:</strong> <span id="infoCargo">...</span></p>
-                        <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ddd;">
-                        <div id="recoveryCodeArea"
-                            style="display: none; background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #feb2b2;">
-                            <span
-                                style="font-size: 0.8rem; font-weight: 700; color: #c53030; display: block; margin-bottom: 8px;">🔑
-                                CÓDIGO DE RECUPERAÇÃO MASTER</span>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <code id="infoRecoveryCode"
-                                    style="background: #fff; color: #c53030; padding: 8px 12px; border-radius: 4px; font-weight: 700; font-size: 1.2rem; letter-spacing: 2px; border: 1px solid #feb2b2; flex: 1; text-align: center;">XXXXXX</code>
-                                <button
-                                    onclick="navigator.clipboard.writeText(document.getElementById('infoRecoveryCode').innerText); alert('Código copiado!')"
-                                    style="background: #c53030; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;"
-                                    title="Copiar">📋 Copiar</button>
-                            </div>
-                            <p style="font-size: 0.75rem; color: #c53030; margin-top: 10px; line-height: 1.4;">
-                                <strong>IMPORTANTE:</strong> Guarde este código em local seguro. Ele permite redefinir
-                                sua senha na tela de login caso você a esqueça.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+<section id="secConta" class="admin-section">
 
-                <div class="admin-card">
-                    <h2 class="admin-card-title">📝 Editar Perfil</h2>
-                    <form id="formEditPerfil">
-                        <div class="input-group">
-                            <label>Novo Nome:</label>
-                            <input type="text" id="editNome" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Novo E-mail:</label>
-                            <input type="email" id="editEmail" required>
-                        </div>
-                        <div class="input-group"
-                            style="background: rgba(var(--primary-rgb), 0.05); padding: 15px; border-radius: 8px;">
-                            <label><strong>Confirmar com Senha Atual:</strong></label>
-                            <input type="password" id="editPassConfirm" required placeholder="Sua senha para validar">
-                        </div>
-                        <button type="submit" class="btn-save" style="width: 100%; margin-top: 15px;">Salvar
-                            Alterações</button>
-                    </form>
-                </div>
+    <!-- Editar dados pessoais -->
+    <div class="admin-card">
 
-                <div class="admin-card">
-                    <h2 class="admin-card-title">🔒 Alterar Senha</h2>
-                    <form id="formEditSenha">
-                        <div class="input-group">
-                            <label>Senha Atual:</label>
-                            <input type="password" id="passAtual" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Nova Senha:</label>
-                            <input type="password" id="passNova" required minlength="4">
-                        </div>
-                        <div class="input-group">
-                            <label>Confirmar Nova Senha:</label>
-                            <input type="password" id="passConfirma" required>
-                        </div>
-                        <button type="submit" class="btn-save"
-                            style="width: 100%; margin-top: 15px; background: var(--secondary);">Atualizar
-                            Senha</button>
-                    </form>
-                </div>
+        <h2 class="admin-card-title">
+            👤 Editar Dados Pessoais
+        </h2>
 
-                <div id="accountMessage" class="message-box" style="display: none; margin-top: 20px;"></div>
-            </section>
+        <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
+            Atualize seu nome e e-mail de acesso ao painel administrativo.
+        </p>
 
-        </div>
-    </main>
+
+        <form id="formEditPerfil">
+
+            <div class="input-group">
+                <label for="editNome">
+                    Nome:
+                </label>
+
+                <input 
+                    type="text" 
+                    id="editNome"
+                    placeholder="Digite seu nome"
+                    required>
+            </div>
+
+
+
+            <div class="input-group">
+                <label for="editEmail">
+                    E-mail:
+                </label>
+
+                <input 
+                    type="email" 
+                    id="editEmail"
+                    placeholder="Digite seu e-mail"
+                    required>
+            </div>
+
+
+
+            <div class="input-group"
+                style="background: rgba(var(--primary-rgb), 0.05); padding: 15px; border-radius: 10px;">
+
+                <label for="editPassConfirm">
+                    🔒 Confirmar senha atual:
+                </label>
+
+                <input 
+                    type="password"
+                    id="editPassConfirm"
+                    placeholder="Digite sua senha atual para confirmar"
+                    required>
+
+            </div>
+
+
+
+            <button 
+                type="submit"
+                class="btn-save"
+                style="width: 100%; margin-top: 15px;">
+
+                Salvar alterações
+
+            </button>
+
+
+        </form>
+
+    </div>
+
+
+
+
+    <!-- Alterar senha -->
+    <div class="admin-card">
+
+        <h2 class="admin-card-title">
+            🔐 Alterar Senha
+        </h2>
+
+
+        <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
+            Altere sua senha de acesso ao painel administrativo.
+        </p>
+
+
+
+        <form id="formEditSenha">
+
+
+            <div class="input-group">
+
+                <label for="passAtual">
+                    Senha atual:
+                </label>
+
+                <input 
+                    type="password"
+                    id="passAtual"
+                    placeholder="Digite sua senha atual"
+                    required>
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label for="passNova">
+                    Nova senha:
+                </label>
+
+                <input 
+                    type="password"
+                    id="passNova"
+                    placeholder="Digite a nova senha"
+                    minlength="4"
+                    required>
+
+            </div>
+
+
+
+            <div class="input-group">
+
+                <label for="passConfirma">
+                    Confirmar nova senha:
+                </label>
+
+                <input 
+                    type="password"
+                    id="passConfirma"
+                    placeholder="Repita a nova senha"
+                    required>
+
+            </div>
+
+
+
+            <button 
+                type="submit"
+                class="btn-save"
+                style="width: 100%; margin-top: 15px;">
+
+                Atualizar Senha
+
+            </button>
+
+        </form>
+
+
+    </div>
+
+
+
+
+    <!-- Mensagem de retorno -->
+    <div 
+        id="accountMessage" 
+        class="message-box" 
+        style="display:none; margin-top:20px;">
+    </div>
+
+
+</section>
+
+</div>
+</main>
 
     <!-- Modais (Mantidos conforme scriptadmin.js espera) -->
     <!-- Modal para Visualizar Detalhes da Turma -->
